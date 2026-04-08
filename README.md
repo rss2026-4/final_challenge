@@ -10,8 +10,8 @@
 
 * [Introduction](https://github.com/mit-rss/final_challenge2026#introduction)
     * [Grading](https://github.com/mit-rss/final_challenge2026#grading)
-* [Shrink Ray Heist](https://github.com/mit-rss/final_challenge2026#parta)
-* [Race to the Moon](https://github.com/mit-rss/final_challenge2026#partb)
+* [Mrs. Puff Boating School](https://github.com/mit-rss/final_challenge2026#parta)
+* [Krusty Krab Pizza Delivery](https://github.com/mit-rss/final_challenge2026#partb)
 * [Briefing](https://github.com/mit-rss/final_challenge2026#Briefing)
 * [General Notes](https://github.com/mit-rss/final_challenge2026#general_notes)
 * [FAQ](https://github.com/mit-rss/final_challenge2026#faq)
@@ -40,13 +40,13 @@ Luckily, through RSS, you’ve learned everything you need to become the best sp
 
 | Deliverable  Grade | Weighting             |
 |---------------|----------------------------------------------------------------------------|
-| Part A: Mrs. Puff's Boating Test (out of 10) | 25% |
+| Part A: Mrs. Puff's Boating School (out of 10) | 25% |
 | Part B: Krusty Krab Pizza Delivery (out of 10) | 35% |
 | Briefing Grade (out of 10) | 40% |
 
-## Part A: Mrs. Puff's Boating Test <a name="parta"></a>
+## Part A: Mrs. Puff's Boating School <a name="parta"></a>
 
-<img src="media/boating_school.png" width="150"/>
+<img src="media/boating_school.png" width="500"/>
 
 Part A is worth 25% of your Final Challenge technical grade. You get 3 attempts and your grade is based on your best attempt out of 3. Your grade will be calculated based on completion of the course and the number of penalties you incur as follows. 
 
@@ -124,9 +124,9 @@ If you have trouble getting accurate localization, consider:
 
 ## Part B: Krusty Krab Pizza Delivery <a name="partb"></a>
 
-<img src="media/spongebob_pizza.jpg" width="400"/>
+<img src="media/spongebob_pizza.png" width="400"/>
 
-<img src="media/Krusty_Krab_Pizza.jpg" width="400"/>
+<img src="media/Krusty_Krab_Pizza.png" width="400"/>
 
 ### Environment and Task
 
