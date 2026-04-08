@@ -24,7 +24,7 @@ Congratulations on completing the six labs of RSS!
 
 This semester, you've learned how to implement real-time robotics software on a widely-used software framework (ROS). You know how to read sensor data (LiDAR, Camera, Odometry) and convert it into a useful representation of the world (homography, localization). You've written algorithms that make plans over the world's state (parking, line following, path planning) and combined them with controllers (PD control, pure pursuit) to accomplish tasks. 
 
-Now, your team will apply everything you’ve learned to outrun Mr. Krabs and steal the Krabby Patty formula!
+Now, your team will apply everything you've learned to successfully pass your boating test and deliver a Krusty Krab Pizza!
 
 <img src="media/patty_wagon.png" width="500"/>
 
@@ -50,7 +50,7 @@ Luckily, through RSS, you’ve learned everything you need to become the best sp
 
 Part A is worth 25% of your Final Challenge technical grade. You get 3 attempts and your grade is based on your best attempt out of 3. Your grade will be calculated based on completion of the course and the number of penalties you incur as follows. 
 
-`Part A grade = heist_score - penalties`
+`Part A grade = boating_test_score - penalties`
 
 ### Environment and Task
 
@@ -96,7 +96,7 @@ The maximum penalty you can recieve for detections is 3 points.
 
 The `manual_assist` is the number of maneuvers (counted individually for turning a corner, stopping before a light, resetting a car, etc.) that required manual teleop intervention. 1 point will be docked for each assist.
 
-The formula for calculating score and penalty values may change for fairness (penalties may be decreased in severity for a clearly functioning solution, for example).\
+The formula for calculating score and penalty values may change for fairness (penalties may be decreased in severity for a clearly functioning solution, for example).
 
 ### Tips
 
@@ -111,7 +111,7 @@ Here are some things you may consider in developing your approach:
 
 As always, your safety controller should be turned on for this portion of the Final Challenge.
 
-**Staff Recommendations: Mrs. Puff's Boating Test**
+**Staff Recommendations: Mrs. Puff's Boating School**
 
 1. PRIORITIZE CAREFULLY! Successful navigation is critical to the success of your heist, so you may want to start there...
 2. Test often and early. Use unit tests to your advantage (test each module prior to integration), and make sure you test in all areas of the map 
