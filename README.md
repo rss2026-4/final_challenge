@@ -56,7 +56,7 @@ Part A is worth 25% of your Final Challenge technical grade. You get 3 attempts 
 
 Mrs. Puff's Boating Test will take place in Bikini Bottom (Stata basement). You, as Spongebob, need to pass your [1,258,057th attempt](http://en.spongepedia.org/index.php?title=Mrs._Puff,_You%E2%80%99re_Fired_(Episode)) at the boating test and get your license (no loopholes allowed)! This will require you to successfully navigate through the city, avoid pedestrians, and correctly stop for traffic lights and parking meters. 
 
-Your goal, after finishing the race successfully, is to drive through the course in Stata basement, where you will be asked to park at 2 TA selected locations. At each location, there will be three objects: you must correctly identify either the parking meter or the stop sign, and park in front of it before continuing on your way. Along the way, there will be a traffic light and pedestrian crosswalk as well. The exact configuration of locations and driving signs will be a secret until Test day; however, the location of the pedestrian crosswalk and traffic light will not change. 
+Your goal, after finishing the race successfully, is to drive through the course in Stata basement, where you will be asked to park at 2 TA selected locations. At each location, there will be three roadisde objects: you must correctly identify the parking meter, and park in front of it before continuing on your way. Along the way, there will be a traffic light and pedestrian crosswalk as well. The exact configuration of locations and driving signs will be a secret until Test day; however, the location of the pedestrian crosswalk and traffic light will not change. 
 
 Here are the details of the challenge:
 
