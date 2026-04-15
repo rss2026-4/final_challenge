@@ -47,9 +47,9 @@ Luckily, through RSS, you’ve learned everything you need to become the best sp
 
 ## Part A: The Great Snail Race <a name="parta"></a>
 
-<img src="media/snail_race.jpeg" width="400"/>
+<img src="media/snail_race.jpeg" width="600"/>
 
-<img src="media/snail_race_2.jpg" width="400"/>
+<img src="media/snail_race_2.jpg" width="600"/>
 
 ### Environment and Task
 
@@ -57,8 +57,8 @@ The crowd is roaring, the bubbles are floating, and it’s time for the most pre
 
 The race will take place on the legendary Bikni Botton Johnson Track Loop—a standard 200-meter course. Each snail (that’s your car!) will be assigned to one of six lanes, revealed on race day. Stay in your lane; no snail likes a lane hog! Lanes are numbered from left to right as shown in the image below. Pick your favorite character and prepare for glory. Will you channel SpongeBob’s unstoppable enthusiasm, Squidward’s questionable confidence, or Patrick’s… unwavering belief in a rock?
 
-<!-- <img src="media/final_race.PNG" width="300" /> -->
-<img src="media/start_area.jpg" width="400"/>
+<!-- <img src="media/final_race.PNG" width="600" /> -->
+<img src="media/start_area.jpg" width="600"/>
 
 Your car's task is to complete the 200-meter loop around the track as fast as possible, while staying in your assigned lane. Any kind of collision (with another car, snail, or with something in Johnson) will seriously jeapordize your racer score, and will be penalized heavily. You should have a safety controller running on your car, but be careful that this doesn't stop your car if there is another car driving next to it on the track!
 
@@ -99,7 +99,7 @@ Please note that Hough Transforms will very likely be useful; helpful resources 
 
 ## Part B: Mrs. Puff's Boating School <a name="partb"></a>
 
-<img src="media/boating_school.png" width="500"/>
+<img src="media/boating_school.png" width="600"/>
 
 Part B is worth 25% of your Final Challenge technical grade. You get 3 attempts and your grade is based on your best attempt out of 3. Your grade will be calculated based on completion of the course and the number of penalties you incur as follows. 
 
@@ -204,7 +204,7 @@ You are encouraged to build your solution on code written in previous labs! If y
 
 ### Start early and check in with us as you go! We don't want your snail looking like this:
 
-<img src="media/snail_race_3.jpg" width="400"/>
+<img src="media/snail_race_3.jpg" width="600"/>
 
 ## FAQ
 
