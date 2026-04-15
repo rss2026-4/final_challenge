@@ -46,9 +46,9 @@ Luckily, through RSS, you’ve learned everything you need to become the best sp
 
 ## Part A: The Great Snail Race <a name="parta"></a>
 
-<img src="media/Krusty_Krab_Pizza.png" width="400"/>
+<img src="media/snail_race.jpeg" width="400"/>
 
-<img src="media/spongebob_pizza.png" width="400"/>
+<img src="media/snail_race_2.jpg" width="400"/>
 
 ### Environment and Task
 
@@ -95,6 +95,10 @@ Here are some things you may consider in developing your approach:
 - How can you detect if the car has drifted into a neighboring lane?
 
 Please note that Hough Transforms will very likely be useful; helpful resources are [here](https://towardsdatascience.com/lines-detection-with-hough-transform-84020b3b1549) and [here](https://docs.opencv.org/3.4/d9/db0/tutorial_hough_lines.html).
+
+Reach out early for help! We don't want your snail looking like this:
+
+<img src="media/snail_race_3.jpg" width="400"/>
 
 ## Part B: Mrs. Puff's Boating School <a name="partb"></a>
 
