@@ -33,7 +33,7 @@ Now, your team will apply everything you've learned to successfully pass your bo
 You have been perfecting your racecar for the last three months. Now, it's time to put your boating skills to the test! Each team will step into the role of SpongeBob, and you have two key
 missions: prove your status as the best Gary owner, and pass Mrs. Puff’s boating test and finally earn your license. There will be two parts to this challenge —- first, becoming the fastest team to complete the Bikini Bottom Snail Race, and second, safely navigating through Bikini Bottom while following the rules of the road.
   - In The Great Snail Race, your team will go head-to-head with other teams to be the fastest snail without shimmying out of your lane.
-  - In Mrs. Puff's Boating School, you will need to navigate safely through Bikini Bottom, obeying all laws of the road without hitting any unsuspecting fishfolk
+  - In Mrs. Puff's Boating School, you will need to navigate safely through Bikini Bottom, obeying all laws of the road without hitting any unsuspecting fishfolk.
     
 Luckily, through RSS, you’ve learned everything you need to become the best sponge under the sea!
 
@@ -55,7 +55,7 @@ Luckily, through RSS, you’ve learned everything you need to become the best sp
 
 The crowd is roaring, the bubbles are floating, and it’s time for the most prestigious event in all of Bikini Bottom… the Great Snail Race! It’s all about speed, slime, and snail pride. SpongeBob SquarePants arrives with his beloved snail, Gary. Squidward Tennisballs (or is it Tentacles) enters Snelly, the high-pedigree purebred snail. And lastly, Patrick Star brings Rocky… the rock.
 
-The race will take place on the legendary Bikni Botton Johnson Track Loop—a standard 200-meter course. Each snail (that’s your car!) will be assigned to one of six lanes, revealed on race day. Stay in your lane. No snail likes a lane hog. Lanes are numbered from left to right as shown in the image below. Pick your favorite character and prepare for glory. Will you channel SpongeBob’s unstoppable enthusiasm, Squidward’s questionable confidence, or Patrick’s… unwavering belief in a rock?
+The race will take place on the legendary Bikni Botton Johnson Track Loop—a standard 200-meter course. Each snail (that’s your car!) will be assigned to one of six lanes, revealed on race day. Stay in your lane; no snail likes a lane hog! Lanes are numbered from left to right as shown in the image below. Pick your favorite character and prepare for glory. Will you channel SpongeBob’s unstoppable enthusiasm, Squidward’s questionable confidence, or Patrick’s… unwavering belief in a rock?
 
 <!-- <img src="media/final_race.PNG" width="300" /> -->
 <img src="media/start_area.jpg" width="400"/>
@@ -107,16 +107,16 @@ Part B is worth 25% of your Final Challenge technical grade. You get 3 attempts 
 
 ### Environment and Task
 
-Mrs. Puff's Boating Test will take place in Bikini Bottom (Stata basement). You, as Spongebob, need to pass your [1,258,057th attempt](http://en.spongepedia.org/index.php?title=Mrs._Puff,_You%E2%80%99re_Fired_(Episode)) at the boating test and get your license (no loopholes allowed)! This will require you to successfully navigate through the city, avoid pedestrians, and correctly stop for traffic lights and parking meters. 
+Mrs. Puff's Boating Test will take place in Bikini Bottom (Stata basement). You, as Spongebob, need to pass your [1,258,057th attempt](http://en.spongepedia.org/index.php?title=Mrs._Puff,_You%E2%80%99re_Fired_(Episode)) at the boating test and get your license (no loopholes allowed)! This will require you to successfully navigate through Bikini Bottom, avoid pedestrians, and correctly stop for traffic lights and parking meters. 
 
-Your goal, after finishing the race successfully, is to drive through the course in Stata basement, where you will be asked to park at 2 TA selected locations. At each location, there will be three roadisde objects: you must correctly identify the parking meter, and park in front of it before continuing on your way. Along the way, there will be a traffic light and pedestrian crosswalk as well. The exact configuration of locations and driving signs will be a secret until Test day; however, the location of the pedestrian crosswalk and traffic light will not change. 
+Your goal, after finishing the race successfully, is to drive through the course in Stata basement, where you will be asked to park at 2 TA selected locations. At each location, there will be three roadside objects: you must correctly identify the parking meter, and park in front of it before continuing onwards. Along the way, there will be a traffic light and pedestrian crosswalk as well. The exact configuration of stopping locations and roadside objects will be a secret until Test day; however, the location of the pedestrian crosswalk and traffic light will not change. 
 
 Here are the details of the challenge:
 
-* You will be given 2 locations at random via the `basement_point_publisher` node -- see the Stata map for an example of possible locations. We will not assign locations outside of the range of the ones on the map. 
+* You will be given 2 locations at random via the `basement_point_publisher` node -- see the Stata map for an example of possible locations. We will generally assign locations similar to  the ones on the map. 
 * You must detect the correct sign out of the three objects at each location using YOLO and park in front of it (stop for 5 seconds)
-* You should avoid running the traffic light, taking out pedestrians, or otherwise creating havoc on the road.
-* You should drive Mrs. Puff back to the starting location if possible; this might earn you extra points in her book!
+* You should avoid running the traffic light, taking out pedestrians, crashing your boat, or otherwise creating havoc on the road.
+* If possible, you should drive Mrs. Puff back to the starting location; this might earn you extra points in her book!
 
 ***!!!UPDATED!!!*** Things to note: 
 * Successful parking entails stopping within ***1m*** in front of the correct item and saving the image with the bounding box
@@ -143,7 +143,7 @@ You will recieve 3 points for each location you successfully reach. At each loca
 
 Pedestrian Crosswalk: The good citizens of Bikini Bottom are going about their day, and often need to cross the street (TAs walking back and forth)! You’ll need to navigate through the city without hitting any pedestrians; otherwise, your boating test might be in trouble.
 
-Traffic Light: Running a red light will likely alarm Mrs. Puff, and hurt your chances of successfully attaining a boating license!
+Traffic Light: Running a red light will scare Mrs. Puff, and might cause her to puff up, which could hurt your chances of successfully attaining a boating license!
 
 The maximum penalty you can recieve for detections is 3 points.
 
@@ -166,7 +166,7 @@ As always, your safety controller should be turned on for this portion of the Fi
 
 **Staff Recommendations: Mrs. Puff's Boating School**
 
-1. PRIORITIZE CAREFULLY! Successful navigation is critical to the success of your heist, so you may want to start there...
+1. PRIORITIZE CAREFULLY! Successful navigation is critical to the successful completion of your boating test, so you may want to start there...
 2. Test often and early. Use unit tests to your advantage (test each module prior to integration), and make sure you test in all areas of the map 
 3. If dividing up the modules between teammates, make sure you are coordinating the data types for inputs and outputs of the modules.
 
@@ -188,7 +188,7 @@ When grading the Technical approach and Experimental evaluation portions of your
 **For numerical evidence, we would like to see**:
 - Numerical evaluation of the success of your lane tracking + following
   - Make sure to mention your method for finding the lane and tuning the controller
-- Numerical evidence evaluating the success of your shrink ray heist algorithm (e.g., stopping distance, deviation from planned path, convergence time, etc)
+- Numerical evidence evaluating the success of your parking meter detection and stopping algorithm (e.g., stopping distance, deviation from planned path, convergence time, etc)
 
 ## General Notes
 
