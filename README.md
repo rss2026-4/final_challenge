@@ -236,3 +236,82 @@ You are encouraged to build your solution on code written in previous labs! If y
 
 *How should the car park in front of the correct part?*
 * The car should consider all objects and stop in front of the correct one for at least 5 seconds.
+
+---
+
+## Repository Layout
+
+This directory is a ROS 2 (`ament_python`) package named **`final_challenge`**.
+
+```
+final-challenge/
+├── package.xml
+├── setup.py
+├── setup.cfg
+├── resource/
+│   └── final_challenge                     # ament resource marker (empty)
+│
+├── final_challenge/                        # Python source
+│   ├── __init__.py
+│   │
+│   ├── part_a/                             # Part A: The Great Snail Race
+│   │   ├── __init__.py
+│   │   ├── lane_detector.py                # camera -> lane lines -> lookahead point
+│   │   ├── lane_follower.py                # lookahead -> Ackermann drive (pure pursuit)
+│   │   └── homography_utils.py             # image <-> ground plane (from Lab 4)
+│   │
+│   ├── part_b/                             # Part B: Mrs. Puff's Boating School
+│   │   ├── __init__.py
+│   │   ├── state_machine.py                # high-level FSM (driving / stop / park / ...)
+│   │   ├── traffic_light_detector.py       # red-light detection
+│   │   ├── pedestrian_detector.py          # YOLO + LiDAR pedestrian gate
+│   │   ├── parking_meter_detector.py       # YOLO -> chosen meter, saves bbox image
+│   │   ├── parking_controller.py           # stop within 1 m of meter, hold 5 s
+│   │   └── navigator.py                    # wraps Lab 6 planner + follower
+│   │
+│   └── common/                             # shared between A and B
+│       ├── __init__.py
+│       └── safety_controller.py            # forward-cone safety stop
+│
+├── launch/
+│   ├── part_a/snail_race.launch.xml
+│   └── part_b/boating_school.launch.xml
+│
+├── config/
+│   ├── part_a/lane_follower.yaml
+│   └── part_b/boating_school.yaml
+│
+├── media/                                  # README assets
+└── racetrack_images/                       # provided test imagery
+```
+
+### Where each part's code goes
+
+* **Part A (Snail Race):** put all lane-detection, lane-following, and Part-A-specific
+  utilities under `final_challenge/part_a/`. Add new entry points for any new node
+  to `setup.py` and wire it into `launch/part_a/snail_race.launch.xml`.
+* **Part B (Boating School):** put state-machine, perception (traffic light /
+  pedestrian / parking meter), the parking controller, and the map-frame
+  navigator under `final_challenge/part_b/`. Wire new nodes into
+  `launch/part_b/boating_school.launch.xml`.
+* **Shared code** (e.g., the safety controller, geometry helpers) goes in
+  `final_challenge/common/`.
+
+### Building & running
+
+From the workspace root (`~/racecar_ws`):
+
+```bash
+colcon build --packages-select final_challenge
+source install/setup.bash
+
+# Part A
+ros2 launch final_challenge snail_race.launch.xml
+
+# Part B
+ros2 launch final_challenge boating_school.launch.xml
+```
+
+Each node currently ships as a working skeleton (proper ROS 2 lifecycle, params,
+topics) with `TODO` comments marking the algorithmic work each teammate needs
+to fill in.
