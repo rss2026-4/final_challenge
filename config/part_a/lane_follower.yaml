@@ -1,0 +1,45 @@
+lane_detector:
+  ros__parameters:
+    camera_topic: "/zed/zed_node/rgb/image_rect_color"
+
+    # White lane-line detection (HSV)
+    white_lower_h: 0
+    white_lower_s: 0
+    white_lower_v: 200
+    white_upper_h: 180
+    white_upper_s: 60
+    white_upper_v: 255
+
+    # Fraction of image height to crop from the top (removes ceiling/walls)
+    roi_top_pct: 0.46
+
+    # Slanted left ROI — x-fraction of image width at the top and bottom of the ROI.
+    # Anything left of this line is masked out (0.0 = no crop).
+    left_roi_top_pct: 0.30
+    left_roi_bottom_pct: -0.25
+
+    # Canny edge detection thresholds
+    canny_low: 50
+    canny_high: 150
+
+    # HoughLinesP parameters
+    hough_threshold: 30
+    hough_min_line_length: 30
+    hough_max_line_gap: 30
+
+    # Angle filter — degrees from horizontal (keep lines between these)
+    min_angle_deg: 10.0
+    max_angle_deg: 85.0
+
+    # Where to sample the midpoint (fraction from top; 0.65 ≈ 35% up from bottom)
+    lookahead_row_pct: 0.65
+
+    # Fallback lane width in pixels when only one line is detected
+    lane_width_px: 150.0
+
+lane_follower:
+  ros__parameters:
+    drive_topic: "/drive"
+    speed: 2.0
+    wheelbase: 0.325
+    max_steer: 0.34

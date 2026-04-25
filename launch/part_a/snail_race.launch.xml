@@ -1,0 +1,9 @@
+<launch>
+  <node pkg="final_challenge" exec="lane_detector" name="lane_detector" output="screen">
+    <param from="$(find-pkg-share final_challenge)/config/part_a/lane_follower.yaml"/>
+  </node>
+
+  <node pkg="final_challenge" exec="lane_follower" name="lane_follower" output="screen">
+    <param from="$(find-pkg-share final_challenge)/config/part_a/lane_follower.yaml"/>
+  </node>
+</launch>
