@@ -1,0 +1,38 @@
+safety_controller:
+  ros_parameters:
+    #pub
+    safe_topic: '/vesc/low_level/input/safety'
+    #sub
+    drive_topic: '/vesc/low_level/ackermann_cmd'
+    scan_topic:  '/scan'
+  
+parking_controller:
+  ros_parameters:
+    #pub
+    drive_topic: "/vesc/low_level/input/navigation"
+    error_topic: "/parking_error"
+    #sub
+    object_topic: "/relative_parking"
+
+homography_transform:
+  ros_parameters:
+    #pub
+    object_topic: 'relative_parking'
+    object_marker: "/parking_marker"
+    #sub
+    object_px: "/relative_parking_px"
+  
+parking_detector:
+  ros_parameters:
+    #pub
+    object_px: "/relative_object_px"
+    object_debug: "/object_debug_img"
+    #sub
+    image_topic: "/zed/zed_node/rgb/image_rect_color"
+
+yolo_annotator:
+  ros_parameters:
+    #pub
+    annotaed_image_topic: "/yolo/annotated_image"
+    #sub
+    image_topic: "/zed/zed_node/rgb/image_rect_color"
