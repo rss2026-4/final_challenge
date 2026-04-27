@@ -52,6 +52,8 @@ class LaneDetector(Node):
         self.declare_parameter("hough_max_line_gap", 30)
         self.declare_parameter("min_angle_deg", 20.0)
         self.declare_parameter("max_angle_deg", 85.0)
+        self.declare_parameter("lookahead_distance_m", 1.0)
+        self.declare_parameter("lookahead_samples", 80)
         self.declare_parameter("lookahead_row_pct", 0.65)
         self.declare_parameter("lane_width_px", 150.0)
 
@@ -76,6 +78,9 @@ class LaneDetector(Node):
         self.hough_max_gap = self.get_parameter("hough_max_line_gap").value
         self.min_angle_deg = self.get_parameter("min_angle_deg").value
         self.max_angle_deg = self.get_parameter("max_angle_deg").value
+        self.lookahead_distance_m = self.get_parameter("lookahead_distance_m").value
+        self.lookahead_samples = max(
+            2, int(self.get_parameter("lookahead_samples").value))
         self.lookahead_row_pct = self.get_parameter("lookahead_row_pct").value
         self.lane_width_px = self.get_parameter("lane_width_px").value
 
@@ -84,6 +89,7 @@ class LaneDetector(Node):
 
         self.left_line = None
         self.right_line = None
+        self.center_line = None
         self.lookahead_uv = None
         self.all_lines = []
 
@@ -157,7 +163,7 @@ class LaneDetector(Node):
             maxLineGap=self.hough_max_gap,
         )
         if raw_lines is None:
-            self.left_line = self.right_line = None
+            self.left_line = self.right_line = self.center_line = None
             self.all_lines = []
             self.lookahead_uv = None
             return None
@@ -190,27 +196,23 @@ class LaneDetector(Node):
         self.left_line = left_line
         self.right_line = right_line
 
-        # 7 — Midpoint at the lookahead row
-        lookahead_y = int(h * self.lookahead_row_pct)
-
-        if left_line is not None and right_line is not None:
-            x_mid = (np.polyval(left_line, lookahead_y) +
-                     np.polyval(right_line, lookahead_y)) / 2.0
-        elif left_line is not None:
-            x_mid = np.polyval(left_line, lookahead_y) + self.lane_width_px / 2.0
-        elif right_line is not None:
-            x_mid = np.polyval(right_line, lookahead_y) - self.lane_width_px / 2.0
-        else:
+        # 7 — Extend the lane estimates into a centerline, then choose the
+        # lookahead point whose homography distance is closest to the target.
+        center_line = self._fit_centerline(left_line, right_line)
+        self.center_line = center_line
+        if center_line is None:
             self.lookahead_uv = None
             return None
 
-        self.lookahead_uv = (x_mid, lookahead_y)
-
-        # 8 — Homography → ground-plane metres in the car frame
-        gx, gy = self.homography.transform_uv_to_xy(x_mid, lookahead_y)
-        if gx <= 0.05:
+        result = self._choose_lookahead_on_centerline(center_line, h, w, roi_y)
+        if result is None:
+            result = self._fallback_lookahead_on_centerline(center_line, h)
+        if result is None:
+            self.lookahead_uv = None
             return None
 
+        x_mid, lookahead_y, gx, gy = result
+        self.lookahead_uv = (x_mid, lookahead_y)
         return gx, gy
 
     # ------------------------------------------------------------------
@@ -226,6 +228,50 @@ class LaneDetector(Node):
             return np.polyfit(ys, xs, 1)
         except (np.RankWarning, np.linalg.LinAlgError):
             return None
+
+    def _fit_centerline(self, left_line, right_line):
+        """Return centerline coeffs for x = a*y + b."""
+        if left_line is not None and right_line is not None:
+            return (np.asarray(left_line) + np.asarray(right_line)) / 2.0
+        if left_line is not None:
+            return np.asarray([left_line[0],
+                               left_line[1] + self.lane_width_px / 2.0])
+        if right_line is not None:
+            return np.asarray([right_line[0],
+                               right_line[1] - self.lane_width_px / 2.0])
+        return None
+
+    def _choose_lookahead_on_centerline(self, center_line, h, w, roi_y):
+        best = None
+
+        for y in np.linspace(h - 1, roi_y, self.lookahead_samples):
+            x = float(np.polyval(center_line, y))
+            if not np.isfinite(x) or x < 0.0 or x >= w:
+                continue
+
+            gx, gy = self.homography.transform_uv_to_xy(x, y)
+            if not np.isfinite(gx) or not np.isfinite(gy) or gx <= 0.05:
+                continue
+
+            distance_error = abs(
+                np.hypot(gx, gy) - self.lookahead_distance_m)
+            candidate = (distance_error, x, y, gx, gy)
+            if best is None or candidate[0] < best[0]:
+                best = candidate
+
+        if best is None:
+            return None
+
+        _, x, y, gx, gy = best
+        return x, y, gx, gy
+
+    def _fallback_lookahead_on_centerline(self, center_line, h):
+        y = int(h * self.lookahead_row_pct)
+        x = float(np.polyval(center_line, y))
+        gx, gy = self.homography.transform_uv_to_xy(x, y)
+        if not np.isfinite(gx) or not np.isfinite(gy) or gx <= 0.05:
+            return None
+        return x, y, gx, gy
 
     def _publish_marker(self, x, y):
         m = Marker()
@@ -255,6 +301,11 @@ class LaneDetector(Node):
                 x_bot = int(np.polyval(line_coeffs, h - 1))
                 x_top = int(np.polyval(line_coeffs, roi_y))
                 cv2.line(debug, (x_bot, h - 1), (x_top, roi_y), (0, 255, 0), 2)
+
+        if self.center_line is not None:
+            x_bot = int(np.polyval(self.center_line, h - 1))
+            x_top = int(np.polyval(self.center_line, roi_y))
+            cv2.line(debug, (x_bot, h - 1), (x_top, roi_y), (255, 0, 255), 2)
 
         if self.lookahead_uv is not None:
             u, v = int(self.lookahead_uv[0]), int(self.lookahead_uv[1])
