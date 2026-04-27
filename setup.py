@@ -33,6 +33,23 @@ setup(
         'console_scripts': [
             'lane_detector = final_challenge.part_a.lane_detector:main',
             'lane_follower = final_challenge.part_a.lane_follower:main',
+
+            #part b 
+            'astar_planner = final_challenge.part_b.astar_planner:main',
+            'homography_transform = final_challenge.part_b.homography_planner:main',
+            'map_inflator = final_challenge.part_b.map_inflator:main',
+            'motion_model = final_challenge.part_b.motion_model:main',
+            'parking_controller = final_challenge.part_b.parking_controller:main',
+            'parking_detector = final_challenge.part_b.parking_detector:main',
+            'particle_filter = final_challenge.part_b.particle_filter:main',
+            'pedestrians = final_challenge.part_b.pedestrians:main',
+            'safety_controller = final_challenge.part_b.safety_controller:main',
+            'sensor_model = final_challenge.part_b.sensor_model:main',
+            'traffic_light = final_challenge.part_b.traffic_light:main',
+            'trajectory_builder = final_challenge.part_b.trajectory_builder:main',
+            'trajectory_follower = final_challenge.part_b.trajectory_follower:main',
+            'trajectory_loader = final_challenge.part_b.trajectory_loader:main',
+            'yolo_annotator = final_challenge.part_b.yolo_annotator:main',
         ],
     },
 )
