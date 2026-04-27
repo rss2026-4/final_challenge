@@ -54,9 +54,6 @@ particle_filter:
     odom_topic: '/odom'
     initial_pose: '/initialpose'
 
-    
-
-
     # The names of topics to listen and publish to
     map_topic: "/map"
     scan_topic: "/scan"
