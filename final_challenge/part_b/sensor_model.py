@@ -1,0 +1,215 @@
+import numpy as np
+from scan_simulator_2d import PyScanSimulator2D
+# Try to change to just `from scan_simulator_2d import PyScanSimulator2D`
+# if any error re: scan_simulator_2d occurs
+
+from scipy.spatial.transform import Rotation as R
+
+from nav_msgs.msg import OccupancyGrid
+
+import sys
+
+np.set_printoptions(threshold=sys.maxsize)
+
+
+class SensorModel:
+
+    def __init__(self, node):
+        node.declare_parameter('map_topic', "default")
+        node.declare_parameter('num_beams_per_particle', 100)
+        node.declare_parameter('scan_theta_discretization', 1.0)
+        node.declare_parameter('scan_field_of_view', 1.0)
+        node.declare_parameter('lidar_scale_to_map_scale', 1.0)
+
+        self.map_topic = node.get_parameter('map_topic').get_parameter_value().string_value
+        self.num_beams_per_particle = node.get_parameter('num_beams_per_particle').get_parameter_value().integer_value
+        self.scan_theta_discretization = node.get_parameter(
+            'scan_theta_discretization').get_parameter_value().double_value
+        self.scan_field_of_view = node.get_parameter('scan_field_of_view').get_parameter_value().double_value
+        self.lidar_scale_to_map_scale = node.get_parameter(
+            'lidar_scale_to_map_scale').get_parameter_value().double_value
+
+        ####################################
+        # Adjust these parameters
+        self.alpha_hit = 0.69
+        self.alpha_short = 0.12
+        self.alpha_max = 0.07
+        self.alpha_rand = 0.12
+        self.sigma_hit = 0.5
+
+        # Your sensor table will be a `table_width` x `table_width` np array:
+        self.table_width = 201
+        ####################################
+
+        node.get_logger().info("%s" % self.map_topic)
+        node.get_logger().info("%s" % self.num_beams_per_particle)
+        node.get_logger().info("%s" % self.scan_theta_discretization)
+        node.get_logger().info("%s" % self.scan_field_of_view)
+
+        # Precompute the sensor model table
+        self.sensor_model_table = np.empty((self.table_width, self.table_width))
+        self.precompute_sensor_model()
+
+        # Create a simulated laser scan
+        self.scan_sim = PyScanSimulator2D(
+            self.num_beams_per_particle,
+            self.scan_field_of_view,
+            0,  # This is not the simulator, don't add noise
+            0.01,  # This is used as an epsilon
+            self.scan_theta_discretization)
+
+        # Subscribe to the map
+        self.map = None
+        self.map_set = False
+        self.map_subscriber = node.create_subscription(
+            OccupancyGrid,
+            self.map_topic,
+            self.map_callback,
+            1)
+
+    def precompute_sensor_model(self):
+        """
+        Generate and store a table which represents the sensor model.
+
+        For each discrete computed range value, this provides the probability of 
+        measuring any (discrete) range. This table is indexed by the sensor model
+        at runtime by discretizing the measurements and computed ranges from
+        RangeLibc.
+        This table must be implemented as a numpy 2D array.
+
+        Compute the table based on class parameters alpha_hit, alpha_short,
+        alpha_max, alpha_rand, sigma_hit, and table_width.
+
+        args:
+            N/A
+
+        returns:
+            No return type. Directly modify `self.sensor_model_table`.
+        """
+
+        z_max = self.table_width - 1
+        sigma = self.sigma_hit
+
+        # z = measured range (rows), d = expected/ground truth range (columns)
+        z_vals = np.arange(self.table_width)
+        d_vals = np.arange(self.table_width)
+
+        # p_hit: Gaussian centered at d
+        # Shape: (table_width, table_width) via broadcasting
+        z_grid = z_vals[:, None]  # (201, 1)
+        d_grid = d_vals[None, :]  # (1, 201)
+        p_hit = np.exp(-0.5 * ((z_grid - d_grid) / sigma) ** 2) / (np.sqrt(2 * np.pi) * sigma)
+        # Normalize p_hit per column (per d value) so each column sums to 1
+        p_hit /= p_hit.sum(axis=0, keepdims=True)
+
+        # p_short: downward sloping line
+        p_short = np.zeros((self.table_width, self.table_width))
+        for d in range(1, self.table_width):  # skip d=0
+            mask = z_vals <= d
+            p_short[mask, d] = (2.0 / d) * (1.0 - z_vals[mask] / d)
+
+        # p_max: spike at z_max
+        p_max = np.zeros((self.table_width, self.table_width))
+        p_max[z_max, :] = 1.0
+
+        # p_rand: uniform
+        p_rand = np.ones((self.table_width, self.table_width)) / z_max
+
+        # Combine
+        table = (self.alpha_hit * p_hit +
+                self.alpha_short * p_short +
+                self.alpha_max * p_max +
+                self.alpha_rand * p_rand)
+
+        # Normalize each column (each d value) so probabilities sum to 1
+        table /= table.sum(axis=0, keepdims=True)
+
+        self.sensor_model_table = table 
+
+
+    def evaluate(self, particles, observation):
+        """
+        Evaluate how likely each particle is given
+        the observed scan.
+
+        args:
+            particles: An Nx3 matrix of the form:
+
+                [x0 y0 theta0]
+                [x1 y0 theta1]
+                [    ...     ]
+
+            observation: A vector of lidar data measured
+                from the actual lidar. THIS IS Z_K. Each range in Z_K is Z_K^i
+
+        returns:
+           probabilities: A vector of length N representing
+               the probability of each particle existing
+               given the observation and the map.
+        """
+
+        if not self.map_set:
+            return
+
+        ####################################
+        # Evaluate the sensor model here!
+        #
+        # You will probably want to use this function
+        # to perform ray tracing from all the particles.
+        # This produces a matrix of size N x num_beams_per_particle 
+
+        scans = self.scan_sim.scan(particles)
+
+        # Scale from meters to map pixels
+        scale = self.resolution * self.lidar_scale_to_map_scale
+        observation = observation / scale
+        scans = scans / scale
+
+        # Clip and discretize to table indices
+        z_max = self.table_width - 1
+        obs_indices = np.clip(observation, 0, z_max).astype(int)       # (num_beams,)
+        scan_indices = np.clip(scans, 0, z_max).astype(int)            # (N, num_beams)
+
+        # Look up probabilities from precomputed table
+        # sensor_model_table[z, d] = p(z | d)
+        probs = self.sensor_model_table[obs_indices, scan_indices]     # (N, num_beams)
+
+        # Multiply across beams (use log-sum to avoid underflow)
+        # Squash by 1/num_beams to prevent particle depletion
+        log_probs = np.sum(np.log(probs + 1e-300), axis=1) / observation.shape[0]
+        # Soften weights so the sensor model doesn't overwhelm the motion model
+        # in featureless areas. Values < 1.0 trust motion more; 1.0 = no change.
+        probabilities = np.exp(log_probs)
+
+
+        return probabilities
+
+        ####################################
+
+    def map_callback(self, map_msg):
+        # Convert the map to a numpy array
+        self.map = np.array(map_msg.data, np.double) / 100.
+        self.map = np.clip(self.map, 0, 1)
+
+        self.resolution = map_msg.info.resolution
+
+        # Convert the origin to a tuple
+        origin_p = map_msg.info.origin.position
+        origin_o = map_msg.info.origin.orientation
+
+        quat = [origin_o.x, origin_o.y, origin_o.z, origin_o.w]
+        yaw = R.from_quat(quat).as_euler("xyz")[2]
+
+        origin = (origin_p.x, origin_p.y, yaw)
+
+        # Initialize a map with the laser scan
+        self.scan_sim.set_map(
+            self.map,
+            map_msg.info.height,
+            map_msg.info.width,
+            map_msg.info.resolution,
+            origin,
+            0.5)
+
+        self.map_set = True
+        print("Map initialized")
