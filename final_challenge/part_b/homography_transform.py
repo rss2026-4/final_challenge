@@ -86,7 +86,7 @@ class HomographyTransformer(Node):
         relative_xy_msg = ObjectLocation()
         relative_xy_msg.x_pos = x
         relative_xy_msg.y_pos = y
-
+        
         self.cone_pub.publish(relative_xy_msg)
 
     def transformUvToXy(self, u, v):

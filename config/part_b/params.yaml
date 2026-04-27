@@ -17,10 +17,10 @@ parking_controller:
 homography_transform:
   ros_parameters:
     #pub
-    object_topic: 'relative_parking'
+    object_topic: '/object_detect_real'
     object_marker: "/parking_marker"
     #sub
-    object_px: "/relative_parking_px"
+    object_px: "/object_detect_pixels"
   
 parking_detector:
   ros_parameters:
@@ -34,9 +34,17 @@ yolo_annotator:
   ros_parameters:
     #pub
     annotaed_image_topic: "/yolo/annotated_image"
+    object_detect_topic: "/object_detect_pixels"
     #sub
     image_topic: "/zed/zed_node/rgb/image_rect_color"
+state_machine:
+  ros_parameters:
+    #pub
+    state_topic: "/state"
 
+    #sub
+    object_detect_topic: "/object_detect_real"
+  
 particle_filter:
   ros__parameters:
     num_particles: 200

@@ -5,6 +5,8 @@ import numpy as np
 import rclpy
 import torch
 
+from vs_msgs.msg import ObjectLocationPixel, ObjectLocationPixelArray
+
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from dataclasses import dataclass
@@ -30,6 +32,10 @@ class YoloAnnotatorNode(Node):
         super().__init__("yolo_annotator")
 
         # Declare and get ROS parameters
+        self.declare_parameter()
+        self.declare_parameter('object_detect_topic', '/object_detect_pixels')
+        self.OBJECT_DETECT_TOPIC = self.get_parameter('object_detect_topic').get_parameter_value().string_value
+
         self.model_name = (
             self.declare_parameter("model", "yolo11n.pt")
             .get_parameter_value()
@@ -76,6 +82,8 @@ class YoloAnnotatorNode(Node):
 
         self.sub = self.create_subscription(Image, self.IMAGE_TOPIC, self.on_image, 10)
         self.pub = self.create_publisher(Image, self.ANNOTATED_IMAGE_TOPIC, 10)
+        
+        self.object_detection_pub = self.create_publisher(ObjectLocationPixelArray, self.OBJECT_DETECT_TOPIC, 10)
 
     def get_class_color_map(self) -> dict[str, tuple[int, int, int]]:
         """
@@ -158,6 +166,9 @@ class YoloAnnotatorNode(Node):
         #
         # Hint: use Python's zip keyword to iterate through the three arrays in a single for loop.
         # self.get_logger().info("running results to detection")
+
+        object_img_locs = ObjectLocationPixelArray()
+
         for detection in zip(xyxy_np, conf_np, cls_np):            
             points = detection[0]
             confidence = detection[1]
@@ -171,6 +182,14 @@ class YoloAnnotatorNode(Node):
             new_detection = Detection(class_id=class_id, class_name=class_name, confidence=confidence, x1=x1, y1=y1, x2=x2, y2=y2)
             detections.append(new_detection)
 
+            object_img_loc = ObjectLocationPixel()
+            
+            object_img_loc.u = float((x1 + x2)/2.0)
+            object_img_loc.v = float((y1 + y2)/2.0) # may want to change this
+
+            object_img_locs.objects.append(object_img_loc)
+        
+        self.pub
         return detections
 
     def draw_detections(

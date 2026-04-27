@@ -1,0 +1,1 @@
+ObjectLocationPixel[] objects
