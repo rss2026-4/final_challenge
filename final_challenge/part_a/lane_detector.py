@@ -15,15 +15,6 @@ from final_challenge.part_a.lane_pipeline import LanePipelineConfig, choose_look
 
 
 def default_homography_matrix_path():
-    source_path = (
-        Path(__file__).resolve().parents[2]
-        / "config"
-        / "part_a"
-        / "homography_matrix.txt"
-    )
-    if source_path.exists():
-        return source_path
-
     from ament_index_python.packages import get_package_share_directory
 
     return (
