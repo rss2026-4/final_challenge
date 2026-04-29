@@ -1,0 +1,102 @@
+safety_controller:
+  ros_parameters:
+    #pub
+    safe_topic: '/vesc/low_level/input/safety'
+    #sub
+    drive_topic: '/vesc/low_level/ackermann_cmd'
+    scan_topic:  '/scan'
+  
+parking_controller:
+  ros_parameters:
+    #pub
+    drive_topic: "/vesc/low_level/input/navigation"
+    error_topic: "/parking_error"
+    #sub
+    object_topic: "/closest_obj"
+
+homography_transform:
+  ros_parameters:
+    #pub
+    object_topic: '/object_detect_real'
+    object_marker: "/parking_marker"
+    #sub
+    object_px: "/object_detect_pixels"
+  
+parking_detector:
+  ros_parameters:
+    #pub
+    object_px: "/relative_object_px"
+    object_debug: "/object_debug_img"
+    #sub
+    image_topic: "/zed/zed_node/rgb/image_rect_color"
+
+yolo_annotator:
+  ros_parameters:
+    #pub
+    annotaed_image_topic: "/yolo/annotated_image"
+    object_detect_topic: "/object_detect_pixels"
+    #sub
+    image_topic: "/zed/zed_node/rgb/image_rect_color"
+    state_topic: "/state"
+
+state_machine:
+  ros_parameters:
+    #pub
+    state_topic: "/state"
+    closest_pub_topic: "/closest_obj"
+
+    #sub
+    object_detect_topic: "/object_detect_real"
+  
+particle_filter:
+  ros__parameters:
+    num_particles: 200
+    num_beams_per_particle: 100
+    scan_field_of_view: 4.71 # radians
+    scan_theta_discretization: 500.0
+    deterministic: false
+    lidar_scale_to_map_scale: 1.0
+
+    #pub
+    odom_pub: "/pf/pose/odom"
+    pose_pub: "/pf/pose"
+    #sub
+    scan_topic: '/scan'
+    odom_topic: '/odom'
+    initial_pose: '/initialpose'
+
+    # The names of topics to listen and publish to
+    map_topic: "/map"
+    scan_topic: "/scan"
+    odom_topic: "/odom"
+    # The frame you should publish your transform to
+    particle_filter_frame: "base_link_pf"
+    # Deterministic flag; set to true to remove all added noise
+    
+astar_planner:
+  ros__parameters:
+    #pub
+    traj_topic: "/astar/trajectory"
+    min_topic: "/astar/planned_trajectory/min_point_array"
+    #sub
+    odom_topic: '/odom'
+    map_topic: '/inflated_map'
+    # goal_topic: "/goal_pose"
+    # init_topic: "/initialpose"
+    endpoints_topic: "/clicked_points"
+
+map_inflator:
+  ros_parameters:
+    #pub
+    map_pub: '/inflated_map'
+    #sub
+    map_sub: '/map'
+
+trajectory_follower:
+  ros_parameters:
+    #pub
+    drive_topic: '/drive'
+    #sub
+    odom_topic: '/odom'
+    traj_topic: "/trajectory/current"
+    state_topic: "/state"
