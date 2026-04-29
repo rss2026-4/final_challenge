@@ -1,34 +1,37 @@
 #!/usr/bin/env python3
+from pathlib import Path
+
 import numpy as np
-import cv2
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PointStamped
-from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point, PointStamped
+from std_msgs.msg import Float32
+from visualization_msgs.msg import Marker, MarkerArray
 from cv_bridge import CvBridge
 
-from final_challenge.part_a.homography_utils import Homography
+from final_challenge.part_a.homography import Homography
+from final_challenge.part_a.lane_pipeline import LanePipelineConfig, choose_lookahead, detect_lane_geometry, draw_detection_overlay
 
-# TODO: Calibrate these for the race track camera setup.
-# These are Lab 4 defaults — they WILL need updating for Johnson Track.
-METERS_PER_INCH = 0.0254
-PTS_IMAGE_PLANE = [
-    [511.0, 198.0],
-    [580.0, 251.0],
-    [287.0, 196.0],
-    [163.0, 205.0],
-    [341.0, 185.0],
-    [148.0, 313.0],
-]
-PTS_GROUND_PLANE = [
-    [46.0 * METERS_PER_INCH, -24.0 * METERS_PER_INCH],
-    [23.5 * METERS_PER_INCH, -16.0 * METERS_PER_INCH],
-    [48.5 * METERS_PER_INCH, 6.5 * METERS_PER_INCH],
-    [43.0 * METERS_PER_INCH, 22.0 * METERS_PER_INCH],
-    [63.0 * METERS_PER_INCH, -1.5 * METERS_PER_INCH],
-    [14.0 * METERS_PER_INCH, 10.0 * METERS_PER_INCH],
-]
+
+def default_homography_matrix_path():
+    source_path = (
+        Path(__file__).resolve().parents[2]
+        / "config"
+        / "part_a"
+        / "homography_matrix.txt"
+    )
+    if source_path.exists():
+        return source_path
+
+    from ament_index_python.packages import get_package_share_directory
+
+    return (
+        Path(get_package_share_directory("final_challenge"))
+        / "config"
+        / "part_a"
+        / "homography_matrix.txt"
+    )
 
 
 class LaneDetector(Node):
@@ -56,53 +59,47 @@ class LaneDetector(Node):
         self.declare_parameter("lookahead_samples", 80)
         self.declare_parameter("lookahead_row_pct", 0.65)
         self.declare_parameter("lane_width_px", 150.0)
+        self.declare_parameter("homography_matrix_path", "")
 
         camera_topic = self.get_parameter("camera_topic").value
-        self.white_lower = np.array([
-            self.get_parameter("white_lower_h").value,
-            self.get_parameter("white_lower_s").value,
-            self.get_parameter("white_lower_v").value,
-        ])
-        self.white_upper = np.array([
-            self.get_parameter("white_upper_h").value,
-            self.get_parameter("white_upper_s").value,
-            self.get_parameter("white_upper_v").value,
-        ])
-        self.roi_top_pct = self.get_parameter("roi_top_pct").value
-        self.left_roi_top_pct = self.get_parameter("left_roi_top_pct").value
-        self.left_roi_bottom_pct = self.get_parameter("left_roi_bottom_pct").value
-        self.canny_low = self.get_parameter("canny_low").value
-        self.canny_high = self.get_parameter("canny_high").value
-        self.hough_threshold = self.get_parameter("hough_threshold").value
-        self.hough_min_length = self.get_parameter("hough_min_line_length").value
-        self.hough_max_gap = self.get_parameter("hough_max_line_gap").value
-        self.min_angle_deg = self.get_parameter("min_angle_deg").value
-        self.max_angle_deg = self.get_parameter("max_angle_deg").value
+        self.pipeline_config = LanePipelineConfig(
+            white_lower=np.array([self.get_parameter("white_lower_h").value, self.get_parameter("white_lower_s").value, self.get_parameter("white_lower_v").value]),
+            white_upper=np.array([self.get_parameter("white_upper_h").value, self.get_parameter("white_upper_s").value, self.get_parameter("white_upper_v").value]),
+            roi_top_pct=self.get_parameter("roi_top_pct").value,
+            left_roi_top_pct=self.get_parameter("left_roi_top_pct").value,
+            left_roi_bottom_pct=self.get_parameter("left_roi_bottom_pct").value,
+            canny_low=self.get_parameter("canny_low").value,
+            canny_high=self.get_parameter("canny_high").value,
+            hough_threshold=self.get_parameter("hough_threshold").value,
+            hough_min_line_length=self.get_parameter("hough_min_line_length").value,
+            hough_max_line_gap=self.get_parameter("hough_max_line_gap").value,
+            min_angle_deg=self.get_parameter("min_angle_deg").value,
+            max_angle_deg=self.get_parameter("max_angle_deg").value,
+            lane_width_px=self.get_parameter("lane_width_px").value,
+        )
         self.lookahead_distance_m = self.get_parameter("lookahead_distance_m").value
-        self.lookahead_samples = max(
-            2, int(self.get_parameter("lookahead_samples").value))
+        self.lookahead_samples = max(2, int(self.get_parameter("lookahead_samples").value))
         self.lookahead_row_pct = self.get_parameter("lookahead_row_pct").value
-        self.lane_width_px = self.get_parameter("lane_width_px").value
 
-        self.homography = Homography(PTS_IMAGE_PLANE, PTS_GROUND_PLANE)
+        homography_path = self.get_parameter("homography_matrix_path").value
+        if not homography_path:
+            homography_path = str(default_homography_matrix_path())
+        self.homography = Homography.from_file(homography_path)
         self.bridge = CvBridge()
 
-        self.left_line = None
-        self.right_line = None
-        self.center_line = None
+        self.last_detection = None
         self.lookahead_uv = None
-        self.all_lines = []
+        self.image_shape = None
 
-        self.image_sub = self.create_subscription(
-            Image, camera_topic, self.image_callback, 5)
-        self.lookahead_pub = self.create_publisher(
-            PointStamped, "/lane/lookahead_point", 1)
-        self.marker_pub = self.create_publisher(
-            Marker, "/lane/marker", 1)
-        self.debug_pub = self.create_publisher(
-            Image, "/lane/debug_img", 1)
+        self.image_sub = self.create_subscription(Image, camera_topic, self.image_callback, 5)
+        self.lookahead_pub = self.create_publisher(PointStamped, "/lane/lookahead_point", 1)
+        self.cross_track_error_pub = self.create_publisher(Float32, "/lane/cross_track_error", 1)
+        self.marker_array_pub = self.create_publisher(MarkerArray, "/lane/markers", 1)
+        self.debug_pub = self.create_publisher(Image, "/lane/debug_img", 1)
 
-        self.get_logger().info("LaneDetector initialized")
+        self.get_logger().info(
+            f"LaneDetector initialized with homography {homography_path}"
+        )
 
     def image_callback(self, msg):
         try:
@@ -121,204 +118,138 @@ class LaneDetector(Node):
             pt_msg.point.x = gx
             pt_msg.point.y = gy
             self.lookahead_pub.publish(pt_msg)
-            self._publish_marker(gx, gy)
+            self._publish_cross_track_error(gy)
+            self._publish_lane_markers(gx, gy)
+        else:
+            self._clear_lane_markers()
 
         if self.debug_pub.get_subscription_count() > 0:
             self._publish_debug_image(img)
 
-    # ------------------------------------------------------------------
-    # Core detection pipeline
-    # ------------------------------------------------------------------
-
     def detect_lanes(self, img):
-        h, w = img.shape[:2]
-
-        # 1 — Crop to road surface ROI
-        roi_y = int(h * self.roi_top_pct)
-        roi = img[roi_y:, :]
-
-        # 2 — White mask in HSV
-        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, self.white_lower, self.white_upper)
-        kernel = np.ones((3, 3), np.uint8)
-        mask = cv2.dilate(mask, kernel, iterations=1)
-
-        # 2b — Mask out left slanted ROI
-        roi_h, roi_w = mask.shape[:2]
-        if self.left_roi_top_pct > 0 or self.left_roi_bottom_pct > 0:
-            x_top = int(self.left_roi_top_pct * roi_w)
-            x_bot = int(self.left_roi_bottom_pct * roi_w)
-            pts = np.array([[0, 0], [x_top, 0],
-                            [x_bot, roi_h - 1], [0, roi_h - 1]], dtype=np.int32)
-            cv2.fillPoly(mask, [pts], 0)
-
-        # 3 — Edge detection
-        edges = cv2.Canny(mask, self.canny_low, self.canny_high)
-
-        # 4 — Hough line segments
-        raw_lines = cv2.HoughLinesP(
-            edges, 1, np.pi / 180,
-            threshold=self.hough_threshold,
-            minLineLength=self.hough_min_length,
-            maxLineGap=self.hough_max_gap,
-        )
-        if raw_lines is None:
-            self.left_line = self.right_line = self.center_line = None
-            self.all_lines = []
+        self.image_shape = img.shape
+        self.last_detection = detect_lane_geometry(img, self.pipeline_config)
+        lookahead = choose_lookahead(self.last_detection.center_line, img.shape, self.homography, self.lookahead_distance_m, self.lookahead_samples, self.lookahead_row_pct, self.last_detection.roi_y)
+        if lookahead is None:
             self.lookahead_uv = None
             return None
 
-        # 5 — Filter by angle and classify left / right
-        left_pts, right_pts = [], []
-        debug_lines = []
-
-        for seg in raw_lines:
-            x1, y1, x2, y2 = seg[0]
-            y1 += roi_y
-            y2 += roi_y
-
-            angle = np.degrees(np.arctan2(abs(y2 - y1), abs(x2 - x1)))
-            if angle < self.min_angle_deg or angle > self.max_angle_deg:
-                continue
-
-            mid_x = (x1 + x2) / 2.0
-            side = "left" if mid_x < w / 2.0 else "right"
-            debug_lines.append((x1, y1, x2, y2, side))
-
-            bucket = left_pts if side == "left" else right_pts
-            bucket.extend([(x1, y1), (x2, y2)])
-
-        self.all_lines = debug_lines
-
-        # 6 — Least-squares line fit per side: x = a*y + b
-        left_line = self._fit_line(left_pts) if len(left_pts) >= 4 else None
-        right_line = self._fit_line(right_pts) if len(right_pts) >= 4 else None
-        self.left_line = left_line
-        self.right_line = right_line
-
-        # 7 — Extend the lane estimates into a centerline, then choose the
-        # lookahead point whose homography distance is closest to the target.
-        center_line = self._fit_centerline(left_line, right_line)
-        self.center_line = center_line
-        if center_line is None:
-            self.lookahead_uv = None
-            return None
-
-        result = self._choose_lookahead_on_centerline(center_line, h, w, roi_y)
-        if result is None:
-            result = self._fallback_lookahead_on_centerline(center_line, h)
-        if result is None:
-            self.lookahead_uv = None
-            return None
-
-        x_mid, lookahead_y, gx, gy = result
+        x_mid, lookahead_y, gx, gy = lookahead
         self.lookahead_uv = (x_mid, lookahead_y)
         return gx, gy
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
+    def _publish_cross_track_error(self, y):
+        msg = Float32()
+        msg.data = float(y)
+        self.cross_track_error_pub.publish(msg)
+
+    def _publish_lane_markers(self, lookahead_x, lookahead_y):
+        if self.last_detection is None or self.image_shape is None:
+            return
+
+        stamp = self.get_clock().now().to_msg()
+        markers = MarkerArray()
+        markers.markers.append(self._delete_all_marker(stamp))
+
+        marker_id = 1
+        for name, line, color in (
+            ("left_lane", self.last_detection.left_line, (0.0, 0.2, 1.0, 1.0)),
+            ("right_lane", self.last_detection.right_line, (1.0, 0.1, 0.0, 1.0)),
+            ("centerline", self.last_detection.center_line, (1.0, 0.0, 1.0, 1.0)),
+        ):
+            marker = self._make_line_marker(marker_id, name, line, color, stamp)
+            marker_id += 1
+            if marker is not None:
+                markers.markers.append(marker)
+
+        markers.markers.append(self._make_sphere_marker(marker_id, "lookahead", lookahead_x, lookahead_y, (1.0, 1.0, 0.0, 1.0), stamp))
+        self.marker_array_pub.publish(markers)
+
+    def _clear_lane_markers(self):
+        markers = MarkerArray()
+        markers.markers.append(self._delete_all_marker(self.get_clock().now().to_msg()))
+        self.marker_array_pub.publish(markers)
 
     @staticmethod
-    def _fit_line(pts):
-        """Fit x = a*y + b via least squares.  Returns [a, b]."""
-        ys = np.array([p[1] for p in pts], dtype=np.float64)
-        xs = np.array([p[0] for p in pts], dtype=np.float64)
-        try:
-            return np.polyfit(ys, xs, 1)
-        except (np.RankWarning, np.linalg.LinAlgError):
+    def _delete_all_marker(stamp):
+        marker = Marker()
+        marker.header.frame_id = "base_link"
+        marker.header.stamp = stamp
+        marker.action = Marker.DELETEALL
+        return marker
+
+    def _make_line_marker(self, marker_id, name, line, color, stamp):
+        points = self._sample_line_in_base_link(line)
+        if len(points) < 2:
             return None
 
-    def _fit_centerline(self, left_line, right_line):
-        """Return centerline coeffs for x = a*y + b."""
-        if left_line is not None and right_line is not None:
-            return (np.asarray(left_line) + np.asarray(right_line)) / 2.0
-        if left_line is not None:
-            return np.asarray([left_line[0],
-                               left_line[1] + self.lane_width_px / 2.0])
-        if right_line is not None:
-            return np.asarray([right_line[0],
-                               right_line[1] - self.lane_width_px / 2.0])
-        return None
+        marker = Marker()
+        marker.header.frame_id = "base_link"
+        marker.header.stamp = stamp
+        marker.ns = "lane_geometry"
+        marker.id = marker_id
+        marker.type = Marker.LINE_STRIP
+        marker.action = Marker.ADD
+        marker.scale.x = 0.035
+        marker.color.r = color[0]
+        marker.color.g = color[1]
+        marker.color.b = color[2]
+        marker.color.a = color[3]
+        marker.pose.orientation.w = 1.0
+        marker.text = name
+        marker.points = points
+        return marker
 
-    def _choose_lookahead_on_centerline(self, center_line, h, w, roi_y):
-        best = None
+    def _make_sphere_marker(self, marker_id, name, x, y, color, stamp):
+        marker = Marker()
+        marker.header.frame_id = "base_link"
+        marker.header.stamp = stamp
+        marker.ns = "lane_geometry"
+        marker.id = marker_id
+        marker.type = Marker.SPHERE
+        marker.action = Marker.ADD
+        marker.scale.x = marker.scale.y = marker.scale.z = 0.18
+        marker.color.r = color[0]
+        marker.color.g = color[1]
+        marker.color.b = color[2]
+        marker.color.a = color[3]
+        marker.pose.position.x = float(x)
+        marker.pose.position.y = float(y)
+        marker.pose.position.z = 0.04
+        marker.pose.orientation.w = 1.0
+        marker.text = name
+        return marker
 
-        for y in np.linspace(h - 1, roi_y, self.lookahead_samples):
-            x = float(np.polyval(center_line, y))
-            if not np.isfinite(x) or x < 0.0 or x >= w:
+    def _sample_line_in_base_link(self, line):
+        if line is None:
+            return []
+
+        h, w = self.image_shape[:2]
+        roi_y = self.last_detection.roi_y
+        points = []
+
+        for y in np.linspace(h - 1, roi_y, 20):
+            u = float(np.polyval(line, y))
+            if not np.isfinite(u) or u < 0.0 or u >= w:
                 continue
 
-            gx, gy = self.homography.transform_uv_to_xy(x, y)
-            if not np.isfinite(gx) or not np.isfinite(gy) or gx <= 0.05:
+            x_base, y_base = self.homography.transform_uv_to_xy(u, y)
+            if not np.isfinite(x_base) or not np.isfinite(y_base):
                 continue
 
-            distance_error = abs(
-                np.hypot(gx, gy) - self.lookahead_distance_m)
-            candidate = (distance_error, x, y, gx, gy)
-            if best is None or candidate[0] < best[0]:
-                best = candidate
+            point = Point()
+            point.x = float(x_base)
+            point.y = float(y_base)
+            point.z = 0.02
+            points.append(point)
 
-        if best is None:
-            return None
-
-        _, x, y, gx, gy = best
-        return x, y, gx, gy
-
-    def _fallback_lookahead_on_centerline(self, center_line, h):
-        y = int(h * self.lookahead_row_pct)
-        x = float(np.polyval(center_line, y))
-        gx, gy = self.homography.transform_uv_to_xy(x, y)
-        if not np.isfinite(gx) or not np.isfinite(gy) or gx <= 0.05:
-            return None
-        return x, y, gx, gy
-
-    def _publish_marker(self, x, y):
-        m = Marker()
-        m.header.frame_id = "base_link"
-        m.header.stamp = self.get_clock().now().to_msg()
-        m.type = Marker.SPHERE
-        m.action = Marker.ADD
-        m.scale.x = m.scale.y = m.scale.z = 0.2
-        m.color.a = 1.0
-        m.color.g = 1.0
-        m.pose.position.x = x
-        m.pose.position.y = y
-        m.pose.orientation.w = 1.0
-        self.marker_pub.publish(m)
+        return points
 
     def _publish_debug_image(self, img):
-        debug = img.copy()
-        h, w = debug.shape[:2]
-        roi_y = int(h * self.roi_top_pct)
+        if self.last_detection is None:
+            return
 
-        for x1, y1, x2, y2, side in self.all_lines:
-            color = (255, 0, 0) if side == "left" else (0, 0, 255)
-            cv2.line(debug, (int(x1), int(y1)), (int(x2), int(y2)), color, 1)
-
-        for line_coeffs in (self.left_line, self.right_line):
-            if line_coeffs is not None:
-                x_bot = int(np.polyval(line_coeffs, h - 1))
-                x_top = int(np.polyval(line_coeffs, roi_y))
-                cv2.line(debug, (x_bot, h - 1), (x_top, roi_y), (0, 255, 0), 2)
-
-        if self.center_line is not None:
-            x_bot = int(np.polyval(self.center_line, h - 1))
-            x_top = int(np.polyval(self.center_line, roi_y))
-            cv2.line(debug, (x_bot, h - 1), (x_top, roi_y), (255, 0, 255), 2)
-
-        if self.lookahead_uv is not None:
-            u, v = int(self.lookahead_uv[0]), int(self.lookahead_uv[1])
-            cv2.circle(debug, (u, v), 10, (0, 255, 255), -1)
-            cv2.line(debug, (0, v), (w, v), (0, 255, 255), 1)
-
-        cv2.line(debug, (0, roi_y), (w, roi_y), (255, 255, 0), 3)
-
-        if self.left_roi_top_pct > 0 or self.left_roi_bottom_pct > 0:
-            x_top = int(self.left_roi_top_pct * w)
-            x_bot = int(self.left_roi_bottom_pct * w)
-            cv2.line(debug, (x_top, roi_y), (x_bot, h - 1), (255, 255, 0), 3)
-
+        debug = draw_detection_overlay(img, self.last_detection, config=self.pipeline_config, lookahead_uv=self.lookahead_uv, raw_line_thickness=1)
         self.debug_pub.publish(self.bridge.cv2_to_imgmsg(debug, "bgr8"))
 
 

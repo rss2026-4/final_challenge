@@ -47,3 +47,7 @@ lane_follower:
     speed: 4.0
     wheelbase: 0.325
     max_steer: 0.34
+
+    # Steering EMA: filtered = alpha * new + (1 - alpha) * previous.
+    # 1.0 = no smoothing; lower values smooth more but add lag.
+    steering_ema_alpha: 0.9

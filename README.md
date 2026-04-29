@@ -258,7 +258,7 @@ final-challenge/
 │   │   ├── __init__.py
 │   │   ├── lane_detector.py                # camera -> lane lines -> lookahead point
 │   │   ├── lane_follower.py                # lookahead -> Ackermann drive (pure pursuit)
-│   │   └── homography_utils.py             # image <-> ground plane (from Lab 4)
+│   │   └── homography.py                   # image <-> ground plane matrix generator
 │   │
 │   ├── part_b/                             # Part B: Mrs. Puff's Boating School
 │   │   ├── __init__.py
