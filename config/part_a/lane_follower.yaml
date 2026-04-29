@@ -32,7 +32,7 @@ lane_detector:
     max_angle_deg: 85.0
 
     # Choose the centerline point closest to this ground-plane distance.
-    lookahead_distance_m: 1.0
+    lookahead_distance_m: 2.0
     lookahead_samples: 80
 
     # Fallback fixed image row if homography-based sampling fails.
@@ -43,7 +43,7 @@ lane_detector:
 
 lane_follower:
   ros__parameters:
-    drive_topic: "/drive"
-    speed: 2.0
+    drive_topic: "/vesc/high_level/input/nav_0"
+    speed: 4.0
     wheelbase: 0.325
     max_steer: 0.34
