@@ -28,7 +28,7 @@ lane_detector:
     hough_max_line_gap: 30
 
     # Angle filter — degrees from horizontal (keep lines between these)
-    min_angle_deg: 10.0
+    min_angle_deg: 20.0
     max_angle_deg: 85.0
 
     # Choose the centerline point closest to this ground-plane distance.
@@ -50,4 +50,4 @@ lane_follower:
 
     # Steering EMA: filtered = alpha * new + (1 - alpha) * previous.
     # 1.0 = no smoothing; lower values smooth more but add lag.
-    steering_ema_alpha: 0.9
+    steering_ema_alpha: 0.8

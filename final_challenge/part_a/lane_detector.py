@@ -109,7 +109,7 @@ class LaneDetector(Node):
             pt_msg.point.x = gx
             pt_msg.point.y = gy
             self.lookahead_pub.publish(pt_msg)
-            self._publish_cross_track_error(gy)
+            self._publish_cross_track_error(img.shape)
             self._publish_lane_markers(gx, gy)
         else:
             self._clear_lane_markers()
@@ -129,9 +129,37 @@ class LaneDetector(Node):
         self.lookahead_uv = (x_mid, lookahead_y)
         return gx, gy
 
-    def _publish_cross_track_error(self, y):
+    def _compute_cross_track_error(self, image_shape):
+        """Signed y of the centerline point closest to the car origin (0,0)."""
+        if self.last_detection is None or self.last_detection.center_line is None:
+            return None
+
+        h, w = image_shape[:2]
+        roi_y = self.last_detection.roi_y
+        center_line = self.last_detection.center_line
+
+        best_dist_sq = float("inf")
+        best_y = None
+        for row in np.linspace(h - 1, roi_y, 20):
+            u = float(np.polyval(center_line, row))
+            if not np.isfinite(u) or u < 0.0 or u >= w:
+                continue
+            x_base, y_base = self.homography.transform_uv_to_xy(u, row)
+            if not np.isfinite(x_base) or not np.isfinite(y_base):
+                continue
+            d2 = x_base * x_base + y_base * y_base
+            if d2 < best_dist_sq:
+                best_dist_sq = d2
+                best_y = y_base
+
+        return best_y
+
+    def _publish_cross_track_error(self, image_shape):
+        cte = self._compute_cross_track_error(image_shape)
+        if cte is None:
+            return
         msg = Float32()
-        msg.data = float(y)
+        msg.data = float(cte)
         self.cross_track_error_pub.publish(msg)
 
     def _publish_lane_markers(self, lookahead_x, lookahead_y):
