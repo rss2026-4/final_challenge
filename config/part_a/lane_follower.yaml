@@ -15,20 +15,26 @@ lane_detector:
 
     # Slanted left ROI — x-fraction of image width at the top and bottom of the ROI.
     # Anything left of this line is masked out (0.0 = no crop).
-    left_roi_top_pct: 0.30
-    left_roi_bottom_pct: -0.25
+    left_roi_top_pct: 0.25
+    left_roi_bottom_pct: -0.20
+
+    # Slanted right ROI — x-fraction of image width measured from the right edge,
+    # at the top and bottom of the ROI. Anything right of this line is masked out
+    # (0.0 = no crop).
+    right_roi_top_pct: 0.15
+    right_roi_bottom_pct: -0.20
 
     # Canny edge detection thresholds
     canny_low: 50
     canny_high: 150
 
     # HoughLinesP parameters
-    hough_threshold: 30
-    hough_min_line_length: 30
+    hough_threshold: 25
+    hough_min_line_length: 25
     hough_max_line_gap: 30
 
     # Angle filter — degrees from horizontal (keep lines between these)
-    min_angle_deg: 20.0
+    min_angle_deg: 10.0
     max_angle_deg: 85.0
 
     # Choose the centerline point closest to this ground-plane distance.
@@ -40,6 +46,9 @@ lane_detector:
 
     # Fallback lane width in pixels when only one line is detected
     lane_width_px: 150.0
+
+    # Bias the centerline horizontally in pixels (negative = left, positive = right).
+    center_offset_px: -10.0
 
 lane_follower:
   ros__parameters:

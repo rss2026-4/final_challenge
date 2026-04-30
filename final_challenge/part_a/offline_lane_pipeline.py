@@ -35,6 +35,8 @@ def make_config():
         roi_top_pct=params["roi_top_pct"],
         left_roi_top_pct=params["left_roi_top_pct"],
         left_roi_bottom_pct=params["left_roi_bottom_pct"],
+        right_roi_top_pct=params.get("right_roi_top_pct", 0.0),
+        right_roi_bottom_pct=params.get("right_roi_bottom_pct", 0.0),
         canny_low=params["canny_low"],
         canny_high=params["canny_high"],
         hough_threshold=params["hough_threshold"],
@@ -43,6 +45,7 @@ def make_config():
         min_angle_deg=params["min_angle_deg"],
         max_angle_deg=params["max_angle_deg"],
         lane_width_px=params["lane_width_px"],
+        center_offset_px=params.get("center_offset_px", 0.0),
         dilate_iterations=DILATE_ITERATIONS,
     )
 

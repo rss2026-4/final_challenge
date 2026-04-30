@@ -15,6 +15,8 @@ class LanePipelineConfig:
     roi_top_pct: float = 0.5
     left_roi_top_pct: float = 0.0
     left_roi_bottom_pct: float = 0.0
+    right_roi_top_pct: float = 0.0
+    right_roi_bottom_pct: float = 0.0
     canny_low: int = 50
     canny_high: int = 150
     hough_threshold: int = 30
@@ -23,6 +25,7 @@ class LanePipelineConfig:
     min_angle_deg: float = 20.0
     max_angle_deg: float = 85.0
     lane_width_px: float = 150.0
+    center_offset_px: float = 0.0
     dilate_iterations: int = 1
     line_support_bin_width_px: float = 40.0
 
@@ -56,7 +59,7 @@ def detect_lane_geometry(img, config):
     left_pts, right_pts, all_lines = collect_lane_points(raw_lines, roi_y, h, w, config.min_angle_deg, config.max_angle_deg, config.line_support_bin_width_px)
     left_line = fit_line(left_pts)
     right_line = fit_line(right_pts)
-    center_line = fit_centerline(left_line, right_line, config.lane_width_px)
+    center_line = fit_centerline(left_line, right_line, config.lane_width_px, config.center_offset_px)
 
     return LanePipelineResult(
         roi_y=roi_y,
@@ -74,6 +77,7 @@ def build_white_mask(roi, config):
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, config.white_lower, config.white_upper)
     apply_left_roi_mask(mask, config)
+    apply_right_roi_mask(mask, config)
 
     if config.dilate_iterations > 0:
         kernel = np.ones((3, 3), np.uint8)
@@ -90,6 +94,17 @@ def apply_left_roi_mask(mask, config):
     x_top = int(config.left_roi_top_pct * roi_w)
     x_bot = int(config.left_roi_bottom_pct * roi_w)
     pts = np.array([[0, 0], [x_top, 0], [x_bot, roi_h - 1], [0, roi_h - 1]], dtype=np.int32)
+    cv2.fillPoly(mask, [pts], 0)
+
+
+def apply_right_roi_mask(mask, config):
+    if config.right_roi_top_pct <= 0 and config.right_roi_bottom_pct <= 0:
+        return
+
+    roi_h, roi_w = mask.shape[:2]
+    x_top = int((1.0 - config.right_roi_top_pct) * roi_w)
+    x_bot = int((1.0 - config.right_roi_bottom_pct) * roi_w)
+    pts = np.array([[x_top, 0], [roi_w - 1, 0], [roi_w - 1, roi_h - 1], [x_bot, roi_h - 1]], dtype=np.int32)
     cv2.fillPoly(mask, [pts], 0)
 
 
@@ -161,15 +176,23 @@ def fit_line(pts):
         return None
 
 
-def fit_centerline(left_line, right_line, lane_width_px):
-    """Return centerline coefficients for x = a*y + b."""
+def fit_centerline(left_line, right_line, lane_width_px, center_offset_px=0.0):
+    """Return centerline coefficients for x = a*y + b.
+
+    center_offset_px shifts the centerline horizontally in pixels: negative
+    biases left, positive biases right.
+    """
     if left_line is not None and right_line is not None:
-        return (np.asarray(left_line) + np.asarray(right_line)) / 2.0
-    if left_line is not None:
-        return np.asarray([left_line[0], left_line[1] + lane_width_px / 2.0])
-    if right_line is not None:
-        return np.asarray([right_line[0], right_line[1] - lane_width_px / 2.0])
-    return None
+        center = (np.asarray(left_line) + np.asarray(right_line)) / 2.0
+    elif left_line is not None:
+        center = np.asarray([left_line[0], left_line[1] + lane_width_px / 2.0])
+    elif right_line is not None:
+        center = np.asarray([right_line[0], right_line[1] - lane_width_px / 2.0])
+    else:
+        return None
+
+    center[1] += center_offset_px
+    return center
 
 
 def choose_lookahead(
@@ -256,6 +279,11 @@ def draw_roi_guides(img, config, roi_y):
     if config.left_roi_top_pct > 0 or config.left_roi_bottom_pct > 0:
         x_top = int(config.left_roi_top_pct * w)
         x_bot = int(config.left_roi_bottom_pct * w)
+        cv2.line(img, (x_top, roi_y), (x_bot, h - 1), (255, 255, 0), 3)
+
+    if config.right_roi_top_pct > 0 or config.right_roi_bottom_pct > 0:
+        x_top = int((1.0 - config.right_roi_top_pct) * w)
+        x_bot = int((1.0 - config.right_roi_bottom_pct) * w)
         cv2.line(img, (x_top, roi_y), (x_bot, h - 1), (255, 255, 0), 3)
 
 

@@ -39,6 +39,8 @@ class LaneDetector(Node):
         self.declare_parameter("roi_top_pct", 0.5)
         self.declare_parameter("left_roi_top_pct", 0.0)
         self.declare_parameter("left_roi_bottom_pct", 0.0)
+        self.declare_parameter("right_roi_top_pct", 0.0)
+        self.declare_parameter("right_roi_bottom_pct", 0.0)
         self.declare_parameter("canny_low", 50)
         self.declare_parameter("canny_high", 150)
         self.declare_parameter("hough_threshold", 30)
@@ -50,6 +52,7 @@ class LaneDetector(Node):
         self.declare_parameter("lookahead_samples", 80)
         self.declare_parameter("lookahead_row_pct", 0.65)
         self.declare_parameter("lane_width_px", 150.0)
+        self.declare_parameter("center_offset_px", 0.0)
         self.declare_parameter("homography_matrix_path", "")
 
         camera_topic = self.get_parameter("camera_topic").value
@@ -59,6 +62,8 @@ class LaneDetector(Node):
             roi_top_pct=self.get_parameter("roi_top_pct").value,
             left_roi_top_pct=self.get_parameter("left_roi_top_pct").value,
             left_roi_bottom_pct=self.get_parameter("left_roi_bottom_pct").value,
+            right_roi_top_pct=self.get_parameter("right_roi_top_pct").value,
+            right_roi_bottom_pct=self.get_parameter("right_roi_bottom_pct").value,
             canny_low=self.get_parameter("canny_low").value,
             canny_high=self.get_parameter("canny_high").value,
             hough_threshold=self.get_parameter("hough_threshold").value,
@@ -67,6 +72,7 @@ class LaneDetector(Node):
             min_angle_deg=self.get_parameter("min_angle_deg").value,
             max_angle_deg=self.get_parameter("max_angle_deg").value,
             lane_width_px=self.get_parameter("lane_width_px").value,
+            center_offset_px=self.get_parameter("center_offset_px").value,
         )
         self.lookahead_distance_m = self.get_parameter("lookahead_distance_m").value
         self.lookahead_samples = max(2, int(self.get_parameter("lookahead_samples").value))
