@@ -17,7 +17,7 @@ class ParkingController(Node):
     def __init__(self):
         super().__init__("parking_controller")
 
-        self.declare_parameter("drive_topic",  "/vesc/low_level/input/navigation")
+        self.declare_parameter("drive_topic",  "/vesc/high_level/input/navigation")
         self.declare_parameter("error_topic",  "/parking_error")
         self.declare_parameter("object_topic",  "/closest_obj")
         self.declare_parameter("state_topic", "/state")
@@ -33,7 +33,7 @@ class ParkingController(Node):
         self.object_sub = self.create_subscription(ObjectLocation, self.OBJECT_TOPIC, self.relative_parking_callback, 1)
         self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 1)
 
-        self.parking_distance = 1  # meters; try playing with this number!
+        self.parking_distance = 0.15  # meters; try playing with this number!
         self.relative_x = 0
         self.relative_y = 0
         self.robot_offset = 0.25 # offset depending on how far the wheels are - apparently part of ts pure pursuit controller lol
@@ -57,8 +57,8 @@ class ParkingController(Node):
         if self.disabled:
             return
 
-        self.relative_x = msg.x
-        self.relative_y = msg.y
+        self.relative_x = msg.x_pos
+        self.relative_y = msg.y_pos
         drive_cmd = AckermannDriveStamped()
 
         #################################
@@ -67,6 +67,8 @@ class ParkingController(Node):
         # Use relative position and your control law to set drive_cmd
         distance = np.sqrt(self.relative_x**2 + self.relative_y**2)
 
+        self.get_logger().info(f"{distance=}")
+        self.get_logger().info(f"{self.parking_distance}")
         if self.backing_up:
             # CASE 1: Recovery — reverse straight until far enough away
             if self.relative_x < self.parking_distance + 0.3:
@@ -76,6 +78,7 @@ class ParkingController(Node):
                 self.backing_up = False
 
         elif distance < self.parking_distance:
+            self.get_logger().info("Within dist")
             # CASE 2: Close enough — stop
             drive_cmd.drive.speed = 0.0
             drive_cmd.drive.steering_angle = 0.0
@@ -93,13 +96,14 @@ class ParkingController(Node):
                 self.state_pub.publish(state)
 
 
-        elif self.relative_x < 0:
-            # CASE 3: Cone is behind us — back up straight
-            drive_cmd.drive.speed = -0.5
-            drive_cmd.drive.steering_angle = 0.0
+        # elif self.relative_x < 0:
+        #     # CASE 3: Cone is behind us — back up straight
+        #     drive_cmd.drive.speed = -0.5
+        #     drive_cmd.drive.steering_angle = 0.0
 
         else:
             # CASE 4: Drive toward cone using pure pursuit
+            self.get_logger().info("Approaching")
             eta = np.arctan2(self.relative_y, self.relative_x)
 
             # lookahead = min(distance, 0.5)   # cap lookahead so turns stay steep even at long range
@@ -116,15 +120,18 @@ class ParkingController(Node):
 
             drive_cmd.drive.speed = float(speed)
             drive_cmd.drive.steering_angle = float(steering_angle)
-
+            
 
         #################################
-
+        self.get_logger().info(f"{drive_cmd.drive.speed=}")
         self.drive_cmd = drive_cmd
+        self.drive_pub.publish(self.drive_cmd)
+        self.get_logger().info(f"published {drive_cmd.drive.speed=}")
         self.error_publisher()
 
     def timer_callback(self):
-        self.drive_pub.publish(self.drive_cmd)
+        pass
+        # self.drive_pub.publish(self.drive_cmd)
 
     def error_publisher(self):
         """

@@ -28,7 +28,7 @@ class PurePursuit(Node):
         self.ODOM_TOPIC = self.get_parameter('odom_topic').get_parameter_value().string_value
         self.DRIVE_TOPIC = self.get_parameter('drive_topic').get_parameter_value().string_value
         self.TRAJ_TOPIC = self.get_parameter('traj_topic').get_parameter_value().string_value
-        self.STATE_TOPIC = self.get_parameter('state_topic').get_paramter_value().string_value
+        self.STATE_TOPIC = self.get_parameter('state_topic').get_parameter_value().string_value
 
         self.lookahead = 0.5  # FILL IN #
         self.speed = 1.0  # FILL IN #
@@ -59,8 +59,8 @@ class PurePursuit(Node):
         #                                             '/pf/pose',
         #                                             self.actual_pose_callback,
         #                                             1)
-                
-        self.get_logger().info(f"Started")
+        
+        self.get_logger().info(f"Path Follower Initialized")
     
     def state_callback(self, msg):
         if msg.current_state == State.PATH_FOLLOWING_FORWARD or msg.current_state == State.PATH_FOLLOWING_RETURN:

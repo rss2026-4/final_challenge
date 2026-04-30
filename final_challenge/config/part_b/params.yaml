@@ -1,5 +1,5 @@
 safety_controller:
-  ros_parameters:
+  ros__parameters:
     #pub
     safe_topic: '/vesc/low_level/input/safety'
     #sub
@@ -7,15 +7,15 @@ safety_controller:
     scan_topic:  '/scan'
   
 parking_controller:
-  ros_parameters:
+  ros__parameters:
     #pub
-    drive_topic: "/vesc/low_level/input/navigation"
+    drive_topic: "/vesc/high_level/input/nav_0"
     error_topic: "/parking_error"
     #sub
     object_topic: "/closest_obj"
 
 homography_transform:
-  ros_parameters:
+  ros__parameters:
     #pub
     object_topic: '/object_detect_real'
     object_marker: "/parking_marker"
@@ -23,7 +23,7 @@ homography_transform:
     object_px: "/object_detect_pixels"
   
 parking_detector:
-  ros_parameters:
+  ros__parameters:
     #pub
     object_px: "/relative_object_px"
     object_debug: "/object_debug_img"
@@ -31,7 +31,7 @@ parking_detector:
     image_topic: "/zed/zed_node/rgb/image_rect_color"
 
 yolo_annotator:
-  ros_parameters:
+  ros__parameters:
     #pub
     annotaed_image_topic: "/yolo/annotated_image"
     object_detect_topic: "/object_detect_pixels"
@@ -40,7 +40,7 @@ yolo_annotator:
     state_topic: "/state"
 
 state_machine:
-  ros_parameters:
+  ros__parameters:
     #pub
     state_topic: "/state"
     closest_pub_topic: "/closest_obj"
@@ -86,16 +86,16 @@ astar_planner:
     endpoints_topic: "/clicked_points"
 
 map_inflator:
-  ros_parameters:
+  ros__parameters:
     #pub
     map_pub: '/inflated_map'
     #sub
     map_sub: '/map'
 
 trajectory_follower:
-  ros_parameters:
+  ros__parameters:
     #pub
-    drive_topic: '/drive'
+    drive_topic: "/vesc/high_level/input/navigation"
     #sub
     odom_topic: '/odom'
     traj_topic: "/trajectory/current"

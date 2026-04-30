@@ -1,5 +1,5 @@
-from final_challenge.final.final_challenge.part_b.sensor_model import SensorModel
-from final_challenge.final.final_challenge.part_b.motion_model import MotionModel
+from final_challenge.part_b.sensor_model import SensorModel
+from final_challenge.part_b.motion_model import MotionModel
 
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseArray, Pose, PoseStamped
@@ -76,6 +76,7 @@ class ParticleFilter(Node):
         self.scan_pub = self.create_publisher(LaserScan, "/pf/scan", 1)
         self.latest_scan = None
 
+        self.get_logger().info("Particle Filter Initialized")
         self.get_logger().info("=============+READY+=============")
 
     def pose_callback(self, msg):

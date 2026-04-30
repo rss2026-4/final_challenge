@@ -16,9 +16,9 @@
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
   </node>
 
-  <node pkg="final_challenge" exec="parking_detector" name="parking_detector" output="screen">
+  <!-- <node pkg="final_challenge" exec="parking_detector" name="parking_detector" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
-  </node>
+  </node> -->
 
   <node pkg="final_challenge" exec="particle_filter" name="particle_filter" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
@@ -27,19 +27,23 @@
   <node pkg="final_challenge" exec="safety_controller" name="safety_controller" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
   </node>
-
+<!-- 
   <node pkg="final_challenge" exec="traffic_light" name="traffic_light" output="screen">
+    <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
+  </node> -->
+
+  <node pkg="final_challenge" exec="trajectory_follower" name="trajectory_follower" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
   </node>
 
-  <node pkg="final_challenge" exec="trajectory_follower" name="trajectory_follower" output="screen">
+    <node pkg="final_challenge" exec="state_machine" name="state_machine" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
   </node>
 
 
   <node pkg="final_challenge" exec="yolo_annotator" name="yolo_annotator" output="screen">
     <param name="model" value="yolo11n.pt" />
-    <param name="conf_threshold" value="0.5" />
+    <param name="conf_threshold" value="0.05" />
     <param name="iou_threshold" value="0.7" />
   </node>
 

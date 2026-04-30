@@ -33,7 +33,6 @@ class YoloAnnotatorNode(Node):
         super().__init__("yolo_annotator")
 
         # Declare and get ROS parameters
-        self.declare_parameter()
         self.declare_parameter('object_detect_topic', '/object_detect_pixels')
         self.declare_parameter('state_topic', '/state')
         self.OBJECT_DETECT_TOPIC = self.get_parameter('object_detect_topic').get_parameter_value().string_value
@@ -109,7 +108,7 @@ class YoloAnnotatorNode(Node):
         # TODO: Customize this dictionary for the lab. Choose a subset of
         #       COCO class names to detect and their corresponding colors
         #       in the annotated image.
-        self.get_logger().info(" %s " % self.model.names)
+        # self.get_logger().info(" %s " % self.model.names)
         return {
             "parking meter": (255, 0, 0),
             "traffic light": (0, 255, 0),
@@ -202,14 +201,18 @@ class YoloAnnotatorNode(Node):
             new_detection = Detection(class_id=class_id, class_name=class_name, confidence=confidence, x1=x1, y1=y1, x2=x2, y2=y2)
             detections.append(new_detection)
 
+            if class_name == "traffic light":
+                self.get_logger().info("traffic light spotted")
+
             object_img_loc = ObjectLocationPixel()
             
             object_img_loc.u = float((x1 + x2)/2.0)
-            object_img_loc.v = float((y1 + y2)/2.0) # may want to change this
+            object_img_loc.v = float((y2)) # may want to change this
+            object_img_loc.label = class_name
 
             object_img_locs.objects.append(object_img_loc)
         
-        self.pub
+        self.object_detection_pub.publish(object_img_locs)
         return detections
 
     def draw_detections(
@@ -222,7 +225,7 @@ class YoloAnnotatorNode(Node):
 
         for det in detections:
             # TODO: Get the bounding box for the detection
-            self.get_logger()
+            # self.get_logger()
             top_left = (det.x1, det.y1)
             bot_right = (det.x2, det.y2)
 

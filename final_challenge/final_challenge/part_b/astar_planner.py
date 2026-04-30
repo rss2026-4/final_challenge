@@ -51,6 +51,8 @@ class PathPlan(Node):
         self.start_pose = None
         self.goal_pose = None
         self.return_path = []
+
+        self.get_logger().info("Path Planner Initialized")
         
 
         

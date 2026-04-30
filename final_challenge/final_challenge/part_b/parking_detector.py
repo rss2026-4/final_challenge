@@ -8,7 +8,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point #geometry_msgs not in CMake file
-from vs_msgs.msg import ObjectLocationPixel
+from vis_msgs.msg import ObjectLocationPixel
 
 # import your color segmentation algorithm; call this function in ros_image_callback!
 from visual_servoing.computer_vision.color_segmentation import cd_color_segmentation
@@ -35,7 +35,7 @@ class ConeDetector(Node):
         self.IMAGE_TOPIC = self.get_parameter("image_topic").get_parameter_value().string_value
 
         # Subscribe to ZED camera RGB frames
-        self.cone_pub = self.create_publisher(ObjectLocationPixel, self.OBJECT_PX, 10)
+        self.parking_meter = self.create_publisher(ObjectLocationPixel, self.OBJECT_PX, 10)
         self.debug_pub = self.create_publisher(Image, self.OBJECT_DEBUG, 10)
         self.image_sub = self.create_subscription(Image, self.IMAGE_TOPIC, self.image_callback, 5)
 
@@ -60,12 +60,13 @@ class ConeDetector(Node):
 
         if x2 - x1 > 0 and y2 - y1 > 0:
             object_px = ObjectLocationPixel()
+            object_px.label = "Parking Meter"
             object_px.u = float((x1 + x2) / 2.0)
             if self.LineFollower: 
                 object_px.v = float((y1 + y2) / 2.0)
             else:
                 object_px.v = float(y2)
-            self.cone_pub.publish(object_px)
+            self.parking_meter.publish(object_px)
 
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.circle(image, (int(object_px.u), int(object_px.v)), 5, (0, 0, 255), -1)

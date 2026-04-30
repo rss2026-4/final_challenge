@@ -77,16 +77,16 @@ class HomographyTransformer(Node):
     def object_detection_callback(self, msg):
         object_locs = ObjectLocationArray()
 
-        for object in msg.objects:
-            u = object.u
-            v = object.v
+        for object_msg in msg.objects:
+            u = object_msg.u
+            v = object_msg.v
 
             x, y = self.transformUvToXy(u, v)
 
             detection = ObjectLocation()
-            detection.x = x
-            detection.y = y
-            detection.label = object.label
+            detection.x_pos = x
+            detection.y_pos = y
+            detection.label = object_msg.label
 
             object_locs.objects.append(detection)
         

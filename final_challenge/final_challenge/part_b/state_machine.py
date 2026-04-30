@@ -23,18 +23,29 @@ class StateMachine(Node):
         
         # publishers
         self.state_pub = self.create_publisher(State, self.STATE_TOPIC, 10)
-        self.closest_pub = self.create_publisher(ObjectLocation, self.OBJECT_PUB_TOPIC, 10)
+        self.closest_pub = self.create_publisher(ObjectLocation, self.CLOSEST_PUB_TOPIC, 10)
         self.traj_pub = self.create_publisher(PoseArray, self.TRAJ_TOPIC, 10)
         
         # subscribers
-        self.state_pub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 10)
+        self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 10)
         self.object_detect_sub = self.create_subscription(ObjectLocationArray, self.OBJECT_DETECT_TOPIC, self.object_detect_callback, 10)
         traj_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.traj_sub = self.create_subscription(PoseArray,self.TRAJ_TOPIC,self.traj_callback,traj_qos)
 
-
         # useful attributes
         self.park_start = 0
+        self.state_dict = {
+            State.PATH_PLANNING_FORWARD : "PATH_PLANNING_FORWARD",
+            State.PATH_PLANNING_RETURN: "PATH_PLANNING_RETURN",
+            State.PATH_FOLLOWING_FORWARD: "PATH_FOLLOWING_FORWARD",
+            State.PATH_FORWARD_DONE: "PATH_FORWARD_DONE",
+            State.PATH_FOLLOWING_RETURN: "PATH_FOLLOWING_RETURN",
+            State.PATH_RETURN_DONE: "PATH_RETURN_DONE",
+            State.TRAFFIC_STOP: "TRAFFIC_STOP",
+            State.PARKING_METER: "PARKING_METER",
+            State.PARKED: "PARKED",
+        }
+
         self.state = None
         self.return_started = False
         self.forward_started = False
@@ -57,11 +68,13 @@ class StateMachine(Node):
         min_dist = np.inf
         closest_obj = None
         
-        for object in objects:
-            distance = np.sqrt(object.x**2 + object.y**2)
+        for object_msg in objects:
+            distance = np.sqrt(object_msg.x_pos**2 + object_msg.y_pos**2)
             if distance < min_dist:
                 min_dist = distance
-                closest_obj = object
+                closest_obj = object_msg
+        if closest_obj == None:
+            return
         
         if closest_obj.label == "traffic light":
             new_state = State()
@@ -78,8 +91,12 @@ class StateMachine(Node):
             self.closest_pub.publish(closest_obj)
     
     def state_callback(self, msg):
-        self.state = msg.current_state
-        self.get_logger().info(f"Current State: {self.state}")
+        if self.state == msg.current_state:
+            return
+        else:
+            self.state = msg.current_state
+
+        self.get_logger().info(f"Current State: {self.state_dict[self.state]}")
         
         if msg.current_state == State.PARKED:
             self.park_start = self.get_clock().now().nanoseconds / 1e9 
