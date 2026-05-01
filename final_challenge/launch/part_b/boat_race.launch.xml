@@ -43,7 +43,7 @@
 
   <node pkg="final_challenge" exec="yolo_annotator" name="yolo_annotator" output="screen">
     <param name="model" value="yolo11n.pt" />
-    <param name="conf_threshold" value="0.05" />
+    <param name="conf_threshold" value="0.5" />
     <param name="iou_threshold" value="0.7" />
   </node>
 

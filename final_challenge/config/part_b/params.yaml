@@ -47,6 +47,7 @@ state_machine:
 
     #sub
     object_detect_topic: "/object_detect_real"
+    pose_topic: "/pf/pose"
   
 particle_filter:
   ros__parameters:

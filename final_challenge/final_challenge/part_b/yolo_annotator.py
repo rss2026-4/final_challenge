@@ -110,7 +110,7 @@ class YoloAnnotatorNode(Node):
         #       in the annotated image.
         # self.get_logger().info(" %s " % self.model.names)
         return {
-            "parking meter": (255, 0, 0),
+            "backpack": (255, 0, 0),
             "traffic light": (0, 255, 0),
         }
 
@@ -143,8 +143,8 @@ class YoloAnnotatorNode(Node):
 
         # Draw detections on BGR image
         annotated = self.draw_detections(bgr, dets)
-        if self.save_img and self.num_imgs <= 2:
-            cv2.imwrite("parking_meter.jpg", annotated)
+        if self.save_img and self.num_imgs < 2 and dets != []:
+            cv2.imwrite(f"parking_meter_{self.num_imgs}.jpg", annotated)
             self.num_imgs += 1
             self.save_img = False
             self.get_logger().info("Image saved to parking_meter.jpg!")
@@ -200,9 +200,6 @@ class YoloAnnotatorNode(Node):
 
             new_detection = Detection(class_id=class_id, class_name=class_name, confidence=confidence, x1=x1, y1=y1, x2=x2, y2=y2)
             detections.append(new_detection)
-
-            if class_name == "traffic light":
-                self.get_logger().info("traffic light spotted")
 
             object_img_loc = ObjectLocationPixel()
             

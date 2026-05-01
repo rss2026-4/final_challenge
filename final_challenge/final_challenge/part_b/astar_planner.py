@@ -124,6 +124,7 @@ class PathPlan(Node):
             self.plan_return(self.return_path)
     
     def plan_path(self, start_point, end_point):
+        self.get_logger().info("Planning forward path via A*")
         self.clear_min_vis()
         traj = self.a_star_search(start_point, end_point)
         self.trajectory.clear()
@@ -136,6 +137,7 @@ class PathPlan(Node):
             # self.get_min_obst_dist(traj)
     
     def plan_return(self, keypoints):
+        self.get_logger().info("Planning return path via A*")
         self.clear_min_vis()
         traj = []
         for i in range(len(keypoints)-1):
