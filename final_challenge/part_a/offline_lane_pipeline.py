@@ -15,7 +15,7 @@ if str(REPO_ROOT) not in sys.path:
 from final_challenge.part_a.lane_pipeline import LanePipelineConfig, detect_lane_geometry, draw_detection_overlay, draw_roi_guides, make_full_frame_gray_panel
 
 
-IMAGE_PATH = REPO_ROOT / "racetrack_images" / "lane_3" / "image17.png"
+IMAGE_PATH = REPO_ROOT / "racetrack_images" / "lane_3" / "image42.png"
 CONFIG_PATH = REPO_ROOT / "config" / "part_a" / "lane_follower.yaml"
 
 DILATE_ITERATIONS = 1

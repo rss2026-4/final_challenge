@@ -308,7 +308,6 @@ def draw_detection_overlay(
     if lookahead_uv is not None:
         u, v = int(lookahead_uv[0]), int(lookahead_uv[1])
         cv2.circle(overlay, (u, v), 10, (0, 255, 255), -1)
-        cv2.line(overlay, (0, v), (w, v), (0, 255, 255), 1)
 
     if config is not None:
         draw_roi_guides(overlay, config, result.roi_y)

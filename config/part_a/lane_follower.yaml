@@ -29,8 +29,8 @@ lane_detector:
     canny_high: 150
 
     # HoughLinesP parameters
-    hough_threshold: 25
-    hough_min_line_length: 25
+    hough_threshold: 30
+    hough_min_line_length: 30
     hough_max_line_gap: 30
 
     # Angle filter — degrees from horizontal (keep lines between these)
