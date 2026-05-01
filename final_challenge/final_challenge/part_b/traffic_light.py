@@ -11,7 +11,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 
 
-class ParkingController(Node):
+class TrafficLight(Node):
     """
     A controller for parking in front of a cone.
     Listens for a relative cone location and publishes control commands.
@@ -173,7 +173,7 @@ def main(args=None):
 
     
     rclpy.init(args=args)
-    pc = ParkingController()
+    pc = TrafficLight()
     rclpy.spin(pc)
     rclpy.shutdown()
 
