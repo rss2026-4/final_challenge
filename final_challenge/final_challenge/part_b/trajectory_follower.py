@@ -22,7 +22,7 @@ class PurePursuit(Node):
         super().__init__("trajectory_follower")
         self.declare_parameter('odom_topic', "/odom")
         self.declare_parameter('drive_topic', "/drive")
-        self.declare_parameter('traj_topic', "/trajectory/current")
+        self.declare_parameter('traj_topic', "/astar/trajectory")
         self.declare_parameter('state_topic', "/state")
 
         self.ODOM_TOPIC = self.get_parameter('odom_topic').get_parameter_value().string_value
@@ -43,10 +43,10 @@ class PurePursuit(Node):
 
         self.initialized_traj = False
         self.trajectory = LineTrajectory(self, "/followed_trajectory")
-        traj_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        # traj_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
         self.pose_sub = self.create_subscription(Odometry,self.ODOM_TOPIC,self.pose_callback,1)
-        self.traj_sub = self.create_subscription(PoseArray,self.TRAJ_TOPIC,self.trajectory_callback,traj_qos)
+        self.traj_sub = self.create_subscription(PoseArray,self.TRAJ_TOPIC,self.trajectory_callback,1)
         self.drive_pub = self.create_publisher(AckermannDriveStamped,self.DRIVE_TOPIC,1)
         self.state_pub = self.create_publisher(State,self.STATE_TOPIC,10)
         self.state_sub = self.create_subscription(State,self.STATE_TOPIC,self.state_callback, 1)
@@ -65,6 +65,7 @@ class PurePursuit(Node):
     def state_callback(self, msg):
         if msg.current_state == State.PATH_FOLLOWING_FORWARD or msg.current_state == State.PATH_FOLLOWING_RETURN:
             self.disabled = False
+            self.get_logger().info("Activating path follower")
         else:
             self.disabled = True
 
@@ -82,7 +83,7 @@ class PurePursuit(Node):
         pose = np.array([pose_x, pose_y])
 
         
-        self.get_logger().info(f"Pose ({pose})")
+        # self.get_logger().info(f"Pose ({pose})")
 
         if np.sqrt((pose_x-self.final_x)**2+(pose_y-self.final_y)**2) < 0.5:
             self.get_logger().info(f"I refuse")
@@ -169,8 +170,8 @@ class PurePursuit(Node):
 
         goal_x, goal_y = goal_point
 
-        self.get_logger().info(f"current location ({pose_x},{pose_y})")
-        self.get_logger().info(f"goal location ({goal_x},{goal_y})")
+        # self.get_logger().info(f"current location ({pose_x},{pose_y})")
+        # self.get_logger().info(f"goal location ({goal_x},{goal_y})")
 
         q = odometry_msg.pose.pose.orientation
         yaw = math.atan2(
@@ -193,7 +194,7 @@ class PurePursuit(Node):
         drive_msg.header.frame_id = "base_link"
         drive_msg.header.stamp = self.get_clock().now().to_msg()
         drive_msg.drive.steering_angle = steering
-        self.get_logger().info(f"steering angle {steering}")
+        # self.get_logger().info(f"steering angle {steering}")
         drive_msg.drive.speed = cur_speed
         self.drive_pub.publish(drive_msg)
 

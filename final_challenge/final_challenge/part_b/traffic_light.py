@@ -59,17 +59,15 @@ class TrafficLight(Node):
         self.bridge = CvBridge()
     
     def state_callback(self, msg):
+        self.get_logger().info("are we parking", {msg.current_state})
         if msg.current_state == State.PARKING_STOP:
             self.disabled = False
         else:
             self.disabled = True
 
     def image_callback(self, image_msg):
+        self.get_logger().info("in image callback")
         image = self.bridge.imgmsg_to_cv2(image_msg, "bgr8")
-
-        if self.LineFollower:
-            image[0:200, :] = 0
-            image[260:, :] = 0
 
         (x1, y1), (x2, y2) = self.cd_color_segmentation(image, None)
 
@@ -88,7 +86,7 @@ class TrafficLight(Node):
         debug_msg = self.bridge.cv2_to_imgmsg(image, "bgr8")
         self.debug_pub.publish(debug_msg)
 
-    def relative_cone_callback(self, msg):
+    def relative_parking_callback(self, msg):
         self.relative_x = msg.x_pos
         self.relative_y = msg.y_pos
         drive_cmd = AckermannDriveStamped()
@@ -159,8 +157,10 @@ class TrafficLight(Node):
 
         if len(contours) == 0:
             self.traffic_light = False
+            self.get_logger().info("NO")
             return ((0, 0), (0, 0))
         self.traffic_light = True
+        self.get_logger().info("R E D")
         # find the largest contour
         largest = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest)

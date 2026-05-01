@@ -6,9 +6,9 @@ class MotionModel:
         node.declare_parameter('deterministic', False)
         self.deterministic = node.get_parameter('deterministic').get_parameter_value().bool_value
         self.node = node
-        # self.lin_noise_frac = 0.15
-        # self.ang_noise_frac = 0.15
-        self.noise_std = 0.15
+        self.lin_noise_frac = 0.15
+        self.ang_noise_frac = 0.15
+        # self.noise_std = 0.15
 
 
     def evaluate(self, particles, odometry):
@@ -41,12 +41,12 @@ class MotionModel:
         if not self.deterministic:
             N = particles.shape[0]
             dist = np.sqrt(dx * dx + dy * dy)
-            # particles[:, 0] += np.random.normal(0, self.lin_noise_frac * dist + 1e-4, N)
-            # particles[:, 1] += np.random.normal(0, self.lin_noise_frac * dist + 1e-4, N)
-            # particles[:, 2] += np.random.normal(0, self.ang_noise_frac * abs(dtheta) + 1e-4, N)
-            particles[:, 0] += np.random.normal(0, self.noise_std, N)
-            particles[:, 1] += np.random.normal(0, self.noise_std, N)
-            particles[:, 2] += np.random.normal(0, self.noise_std, N)
+            particles[:, 0] += np.random.normal(0, self.lin_noise_frac * dist + 1e-4, N)
+            particles[:, 1] += np.random.normal(0, self.lin_noise_frac * dist + 1e-4, N)
+            particles[:, 2] += np.random.normal(0, self.ang_noise_frac * abs(dtheta) + 1e-4, N)
+            # particles[:, 0] += np.random.normal(0, self.noise_std, N)
+            # particles[:, 1] += np.random.normal(0, self.noise_std, N)
+            # particles[:, 2] += np.random.normal(0, self.noise_std, N)
             
 
         return particles

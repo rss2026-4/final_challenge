@@ -13,7 +13,7 @@ class StateMachine(Node):
         self.declare_parameter('state_topic', '/state')
         self.declare_parameter('object_detect_topic', '/object_detect')
         self.declare_parameter('closest_pub_topic', '/closest_obj')
-        self.declare_parameter('traj_topic', "/trajectory/current")
+        self.declare_parameter('traj_topic', "/astar/trajectory") #"/trajectory/current"
         self.declare_parameter('pose_topic', "/pf/pose")
 
         # get params
@@ -31,8 +31,8 @@ class StateMachine(Node):
         # subscribers
         self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 10)
         self.object_detect_sub = self.create_subscription(ObjectLocationArray, self.OBJECT_DETECT_TOPIC, self.object_detect_callback, 10)
-        traj_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self.traj_sub = self.create_subscription(PoseArray,self.TRAJ_TOPIC,self.traj_callback,traj_qos)
+        # traj_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.traj_sub = self.create_subscription(PoseArray,self.TRAJ_TOPIC,self.traj_callback,1)
         self.pose_sub = self.create_subscription(PoseStamped, self.POSE_TOPIC, self.pose_callback, 1)
 
         # useful attributes
@@ -101,8 +101,12 @@ class StateMachine(Node):
             self.closest_pub.publish(closest_obj)
 
         cooldown_dist = 5 # meters
-        park_dist = self.get_dist(self.current_pose, self.parked_pose)
-        if closest_obj.label == "backpack" and park_dist >= cooldown_dist:
+        if self.parked_pose is None:
+            park_dist = np.inf
+        else:
+            park_dist = self.get_dist(self.current_pose, self.parked_pose)
+        
+        if closest_obj.label == "parking meter" and park_dist >= cooldown_dist:
             if self.state != State.PARKING_METER:
                 new_state = State()
                 new_state.current_state = State.PARKING_METER

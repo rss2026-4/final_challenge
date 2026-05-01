@@ -110,7 +110,7 @@ class YoloAnnotatorNode(Node):
         #       in the annotated image.
         # self.get_logger().info(" %s " % self.model.names)
         return {
-            "backpack": (255, 0, 0),
+            "parking meter": (255, 0, 0),
             "traffic light": (0, 255, 0),
         }
 

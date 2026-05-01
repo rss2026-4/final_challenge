@@ -1,6 +1,6 @@
 import rclpy
 
-from geometry_msgs.msg import PoseArray, PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import Pose, PoseArray, PoseStamped, PoseWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid, Odometry
 from final_challenge.part_b.utils import LineTrajectory
 from rclpy.node import Node
@@ -25,6 +25,8 @@ class PathPlan(Node):
         self.declare_parameter('endpoints_topic', "/clicked_points")
         self.declare_parameter('min_topic', "/astar/planned_trajectory/min_point_array")
         self.declare_parameter('state_topic', "/state")
+        self.declare_parameter('goal_topic', "/goal_pose")
+        self.declare_parameter('init_topic', "/initialpose")
 
         self.ODOM_TOPIC = self.get_parameter('odom_topic').get_parameter_value().string_value
         self.MAP_TOPIC = self.get_parameter('map_topic').get_parameter_value().string_value
@@ -32,15 +34,16 @@ class PathPlan(Node):
         self.ENDPOINTS_TOPIC = self.get_parameter('endpoints_topic').get_parameter_value().string_value
         self.MIN_TOPIC = self.get_parameter('min_topic').get_parameter_value().string_value
         self.STATE_TOPIC = self.get_parameter('state_topic').get_parameter_value().string_value
-        
+        self.GOAL_TOPIC = self.get_parameter('goal_topic').get_parameter_value().string_value
+        self.INIT_TOPIC = self.get_parameter('init_topic').get_parameter_value().string_value
 
         self.traj_pub = self.create_publisher(PoseArray, self.TRAJ_TOPIC, 10)
-        # self.min_pub = self.create_publisher(MarkerArray, self.MIN_TOPIC, 1)
+        self.min_pub = self.create_publisher(MarkerArray, self.MIN_TOPIC, 1)
         self.map_sub = self.create_subscription(OccupancyGrid, self.MAP_TOPIC, self.map_cb, 1)
-        # self.goal_sub = self.create_subscription(PoseStamped,self.GOAL_TOPIC , self.goal_cb, 10)
+        self.goal_sub = self.create_subscription(PoseStamped, self.GOAL_TOPIC , self.goal_cb, 10)
         # self.pose_sub = self.create_subscription(Odometry, self.ODOM_TOPIC, self.pose_cb, 10)
-        self.endpoints_sub = self.create_subscription(PoseArray, self.ENDPOINTS_TOPIC, self.endpoints_cb, 10)
-        # self.initpose_sub = self.create_subscription(PoseWithCovarianceStamped, self.INIT_TOPIC, self.init_pose, 1)
+        # self.endpoints_sub = self.create_subscription(PoseArray, self.ENDPOINTS_TOPIC, self.endpoints_cb, 10)
+        self.initpose_sub = self.create_subscription(PoseWithCovarianceStamped, self.INIT_TOPIC, self.init_pose, 1)
         self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_cb, 10)
 
         self.trajectory = LineTrajectory(node=self, viz_namespace="/astar/planned_trajectory", color=(0.0, 1.0, 0.0))
@@ -53,25 +56,51 @@ class PathPlan(Node):
         self.return_path = []
 
         self.get_logger().info("Path Planner Initialized")
+
+        self.sent_points = False
+
+        # self.timer = self.create_timer(15, self.timer_callback)
         
 
         
-        
+    # def timer_callback(self):
+    #     if self.sent_points == False:
+    #         self.get_logger().info("sending points")
+    #         points = PoseArray()
+    #         start_pose = Pose()
+    #         start_pose.position.x = -5.53
+    #         start_pose.position.y = 22.59
+
+    #         goal_pose = Pose()
+    #         goal_pose.position.x = -15.17
+    #         goal_pose.position.y = 12.13
+
+
+    #         points.poses.append(start_pose)
+    #         points.poses.append(goal_pose)
+
+    #         self.endpoints_cb(points)
+
+    #         self.timer.destroy()
+    #         self.timer = None
+
 # ── Map Helpers ─────────────────────────────────────────────────
     def map_cb(self, msg):
-            self.map = msg
-            if self.map.data != msg.data or self.map_received == 0:
-                # orientation extraction
-                o = msg.info.origin
-                q = o.orientation
-                yaw = np.arctan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
-                self.map_origin_x = o.position.x
-                self.map_origin_y = o.position.y
-                self.map_cos = np.cos(yaw)
-                self.map_sin = np.sin(yaw)
+        self.get_logger().info("Map received!!")
+        self.map = msg
+        
+        if self.map.data != msg.data or self.map_received == 0:
+            # orientation extraction
+            o = msg.info.origin
+            q = o.orientation
+            yaw = np.arctan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+            self.map_origin_x = o.position.x
+            self.map_origin_y = o.position.y
+            self.map_cos = np.cos(yaw)
+            self.map_sin = np.sin(yaw)
 
-                self.map_dict = self.create_map_dict()
-                self.map_received = 1
+            self.map_dict = self.create_map_dict()
+            self.map_received = 1
     
     def world_to_cell(self, x, y):
         dx = x - self.map_origin_x
@@ -105,25 +134,37 @@ class PathPlan(Node):
 
 # ── Planning Helpers ─────────────────────────────────────────────────
     
-    def endpoints_cb(self, msg):
-        start = msg.poses[0]
-        goal = msg.poses[1]
+    # def endpoints_cb(self, msg):
+    #     start = msg.poses[0]
+    #     goal = msg.poses[1]
 
-        self.start_pose = self.world_to_cell(start.position.x, start.pose.position.y)
-        self.goal_pose = self.world_to_cell(goal.position.x, goal.pose.position.y)
-        self.return_path = [self.goal_pose, (-54.295135498046875, 34.33041763305664), (-54.7680778503418, -0.11294388025999069), self.start_pose]
+    #     self.start_pose = self.world_to_cell(start.position.x, start.position.y)
+    #     self.goal_pose = self.world_to_cell(goal.position.x, goal.position.y)
+    #     self.return_path = [self.goal_pose, (-54.295135498046875, 34.33041763305664), (-54.7680778503418, -0.11294388025999069), self.start_pose]
         
-        self.trajectory.clear()
-        self.trajectory.publish_viz()
+    #     self.trajectory.clear()
+    #     self.trajectory.publish_viz()
 
+    #     if self.map is not None:
+    #         self.plan_path(self.start_pose, self.goal_pose)
+    def init_pose(self, msg):
+        self.get_logger().info(f"clicked point: ({msg.pose.pose.position.x, msg.pose.pose.position.y})")
+        self.start_pose = self.world_to_cell(msg.pose.pose.position.x, msg.pose.pose.position.y)
+    
+    def goal_cb(self, msg):
+        # get coords in cell/grid frame
+        self.goal_pose = self.world_to_cell(msg.pose.position.x, msg.pose.position.y)
+        self.get_logger().info("Start Pose: %s | End Pose: %s | map received: %s " % (self.start_pose, self.goal_pose, self.map_received))
+        
         if self.map is not None:
+            self.get_logger().info("Planning path!")
             self.plan_path(self.start_pose, self.goal_pose, self.map_received)
-
+    
     def state_cb(self, msg):
         if msg.current_state == State.PATH_PLANNING_RETURN:
             self.plan_return(self.return_path)
     
-    def plan_path(self, start_point, end_point):
+    def plan_path(self, start_point, end_point, map_received):
         self.get_logger().info("Planning forward path via A*")
         self.clear_min_vis()
         traj = self.a_star_search(start_point, end_point)
