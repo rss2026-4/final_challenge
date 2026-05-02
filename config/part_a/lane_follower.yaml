@@ -13,6 +13,9 @@ lane_detector:
     # Fraction of image height to crop from the top (removes ceiling/walls)
     roi_top_pct: 0.46
 
+    # Fraction of image height to crop from the bottom (removes hood/near-field)
+    roi_bottom_pct: 0.4
+
     # Slanted left ROI — x-fraction of image width at the top and bottom of the ROI.
     # Anything left of this line is masked out (0.0 = no crop).
     left_roi_top_pct: 0.25
@@ -48,7 +51,7 @@ lane_detector:
     lane_width_px: 150.0
 
     # Bias the centerline horizontally in pixels (negative = left, positive = right).
-    center_offset_px: -10.0
+    center_offset_px: 0.0 # -20 pretty good
 
 lane_follower:
   ros__parameters:
@@ -56,6 +59,9 @@ lane_follower:
     speed: 4.0
     wheelbase: 0.325
     max_steer: 0.34
+
+    # Max change in raw steering angle per step (radians) before EMA.
+    max_steering_delta: 0.05
 
     # Steering EMA: filtered = alpha * new + (1 - alpha) * previous.
     # 1.0 = no smoothing; lower values smooth more but add lag.

@@ -37,6 +37,7 @@ class LaneDetector(Node):
         self.declare_parameter("white_upper_s", 60)
         self.declare_parameter("white_upper_v", 255)
         self.declare_parameter("roi_top_pct", 0.5)
+        self.declare_parameter("roi_bottom_pct", 0.0)
         self.declare_parameter("left_roi_top_pct", 0.0)
         self.declare_parameter("left_roi_bottom_pct", 0.0)
         self.declare_parameter("right_roi_top_pct", 0.0)
@@ -60,6 +61,7 @@ class LaneDetector(Node):
             white_lower=np.array([self.get_parameter("white_lower_h").value, self.get_parameter("white_lower_s").value, self.get_parameter("white_lower_v").value]),
             white_upper=np.array([self.get_parameter("white_upper_h").value, self.get_parameter("white_upper_s").value, self.get_parameter("white_upper_v").value]),
             roi_top_pct=self.get_parameter("roi_top_pct").value,
+            roi_bottom_pct=self.get_parameter("roi_bottom_pct").value,
             left_roi_top_pct=self.get_parameter("left_roi_top_pct").value,
             left_roi_bottom_pct=self.get_parameter("left_roi_bottom_pct").value,
             right_roi_top_pct=self.get_parameter("right_roi_top_pct").value,

@@ -13,6 +13,7 @@ class LanePipelineConfig:
     white_lower: np.ndarray = field(default_factory=lambda: np.array([0, 0, 200], dtype=np.uint8))
     white_upper: np.ndarray = field(default_factory=lambda: np.array([180, 60, 255], dtype=np.uint8))
     roi_top_pct: float = 0.5
+    roi_bottom_pct: float = 0.0
     left_roi_top_pct: float = 0.0
     left_roi_bottom_pct: float = 0.0
     right_roi_top_pct: float = 0.0
@@ -78,6 +79,7 @@ def build_white_mask(roi, config):
     mask = cv2.inRange(hsv, config.white_lower, config.white_upper)
     apply_left_roi_mask(mask, config)
     apply_right_roi_mask(mask, config)
+    apply_bottom_roi_mask(mask, config)
 
     if config.dilate_iterations > 0:
         kernel = np.ones((3, 3), np.uint8)
@@ -106,6 +108,15 @@ def apply_right_roi_mask(mask, config):
     x_bot = int((1.0 - config.right_roi_bottom_pct) * roi_w)
     pts = np.array([[x_top, 0], [roi_w - 1, 0], [roi_w - 1, roi_h - 1], [x_bot, roi_h - 1]], dtype=np.int32)
     cv2.fillPoly(mask, [pts], 0)
+
+
+def apply_bottom_roi_mask(mask, config):
+    if config.roi_bottom_pct <= 0:
+        return
+
+    roi_h, roi_w = mask.shape[:2]
+    y_cutoff = int((1.0 - config.roi_bottom_pct) * roi_h)
+    mask[y_cutoff:, :] = 0
 
 
 def collect_lane_points(
@@ -148,18 +159,26 @@ def collect_lane_points(
 
         bins = left_bins if side == "left" else right_bins
         bin_key = int(round(x_bottom / max(1.0, bin_width_px)))
-        bin_data = bins.setdefault(bin_key, {"points": [], "length": 0.0})
+        bin_data = bins.setdefault(bin_key, {"points": [], "length": 0.0, "angles": []})
         bin_data["points"].extend([(x1, y1_global), (x2, y2_global)])
-        bin_data["length"] += float(np.hypot(x2 - x1, y2 - y1))
+        seg_len = float(np.hypot(x2 - x1, y2 - y1))
+        bin_data["length"] += seg_len
+        bin_data["angles"].append((angle, seg_len))
 
-    return (strongest_bin_points(left_bins), strongest_bin_points(right_bins), all_lines)
+    return (most_vertical_bin_points(left_bins), most_vertical_bin_points(right_bins), all_lines)
 
 
-def strongest_bin_points(bins):
+def most_vertical_bin_points(bins):
     if not bins:
         return []
 
-    best = max(bins.values(), key=lambda bin_data: (len(bin_data["points"]), bin_data["length"]))
+    def avg_angle(bin_data):
+        total_len = bin_data["length"]
+        if total_len < 1e-6:
+            return 0.0
+        return sum(a * l for a, l in bin_data["angles"]) / total_len
+
+    best = max(bins.values(), key=avg_angle)
     return best["points"]
 
 
@@ -275,6 +294,11 @@ def draw_line_model(img, line_coeffs, y_top, y_bottom, color, thickness):
 def draw_roi_guides(img, config, roi_y):
     h, w = img.shape[:2]
     cv2.line(img, (0, roi_y), (w, roi_y), (255, 255, 0), 3)
+
+    if config.roi_bottom_pct > 0:
+        roi_h = h - roi_y
+        y_cutoff = roi_y + int((1.0 - config.roi_bottom_pct) * roi_h)
+        cv2.line(img, (0, y_cutoff), (w, y_cutoff), (255, 255, 0), 3)
 
     if config.left_roi_top_pct > 0 or config.left_roi_bottom_pct > 0:
         x_top = int(config.left_roi_top_pct * w)

@@ -19,12 +19,14 @@ class LaneFollower(Node):
         self.declare_parameter("wheelbase", self.WHEELBASE)
         self.declare_parameter("max_steer", self.MAX_STEER)
         self.declare_parameter("steering_ema_alpha", 1.0)
+        self.declare_parameter("max_steering_delta", 0.05)
 
         drive_topic = self.get_parameter("drive_topic").value
         self.speed = self.get_parameter("speed").value
         self.wheelbase = self.get_parameter("wheelbase").value
         self.max_steer = self.get_parameter("max_steer").value
         self.steering_ema_alpha = self._clamp(self.get_parameter("steering_ema_alpha").value, 0.0, 1.0)
+        self.max_steering_delta = self.get_parameter("max_steering_delta").value
         self.filtered_steering = None
 
         self.lookahead_sub = self.create_subscription(PointStamped, "/lane/lookahead_point", self.lookahead_callback, 1)
@@ -63,6 +65,10 @@ class LaneFollower(Node):
         if self.filtered_steering is None:
             self.filtered_steering = steering
             return steering
+
+        delta = steering - self.filtered_steering
+        if abs(delta) > self.max_steering_delta:
+            steering = self.filtered_steering + math.copysign(self.max_steering_delta, delta)
 
         alpha = self.steering_ema_alpha
         self.filtered_steering = alpha * steering + (1.0 - alpha) * self.filtered_steering
