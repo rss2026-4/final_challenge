@@ -57,6 +57,13 @@ class TrafficLight(Node):
         self.debug_pub = self.create_publisher(Image, "/traffic_debug_img", 10)
         self.image_sub = self.create_subscription(Image, "/zed/zed_node/rgb/image_rect_color", self.image_callback, 5)
         self.bridge = CvBridge()
+
+
+        self.declare_parameter('annotated_image_topic', "/yolo/color_image")
+
+        self.ANNOTATED_IMAGE_TOPIC = self.get_parameter('annotated_image_topic').get_parameter_value().string_value
+
+        self.pub = self.create_publisher(Image, self.ANNOTATED_IMAGE_TOPIC, 10)
     
     def state_callback(self, msg):
         self.get_logger().info("are we parking", {msg.current_state})
@@ -74,11 +81,8 @@ class TrafficLight(Node):
         if x2 - x1 > 0 and y2 - y1 > 0:
             traffic_px = ObjectLocationPixel()
             traffic_px.u = float((x1 + x2) / 2.0)
-            if self.LineFollower: 
-                traffic_px.v = float((y1 + y2) / 2.0)
-            else:
-                traffic_px.v = float(y2)
-            self.cone_pub.publish(traffic_px)
+            traffic_px.v = float(y2)
+            self.traffic_light_pub.publish(traffic_px)
 
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.circle(image, (int(traffic_px.u), int(traffic_px.v)), 5, (0, 0, 255), -1)
@@ -144,8 +148,8 @@ class TrafficLight(Node):
         # binary mask for orange cone values
 
         # used for tests
-        lower = np.array([25, 120, 255])
-        upper = np.array([25, 25, 255])
+        lower = np.array([0, 0, 255])
+        upper = np.array([25, 120, 255])
 
         # used for robot
         # lower = np.array([5, 80, 150])
@@ -159,13 +163,25 @@ class TrafficLight(Node):
             self.traffic_light = False
             self.get_logger().info("NO")
             return ((0, 0), (0, 0))
-        self.traffic_light = True
-        self.get_logger().info("R E D")
-        # find the largest contour
-        largest = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(largest)
-        bounding_box = ((x, y), (x + w, y + h))
-        return bounding_box
+        else:
+            self.traffic_light = True
+            self.get_logger().info("R E D")
+            # find the largest contour
+            largest = max(contours, key=cv2.contourArea)
+            x, y, w, h = cv2.boundingRect(largest)
+            bounding_box = ((x, y), (x + w, y + h))
+            self.draw_detections(img,bounding_box)
+
+            return bounding_box
+
+    
+    def draw_detections(self, bgr_image: np.ndarray,box):
+        top_left = box[0]
+        bot_right = box[1]
+        out_image = bgr_image.copy()
+        out_image = cv2.rectangle(out_image, top_left, bot_right,2)
+        return out_image
+
     
 
 
