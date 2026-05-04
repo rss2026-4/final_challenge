@@ -110,19 +110,19 @@ def find_bag_dirs(input_dir: str) -> list[str]:
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    default_input = os.path.normpath(os.path.join(script_dir, "..", "part a bags"))
-    default_output = os.path.normpath(os.path.join(script_dir, "..", "part a csvs"))
+    default_input = os.path.normpath(os.path.join(script_dir, "..", "bags-alicia")) #change (input)
+    default_output = os.path.normpath(os.path.join(script_dir, "..", "csvs-alicia"))
 
     parser = argparse.ArgumentParser(description="Convert ROS2 bags to CSV files.")
     parser.add_argument(
         "--input",
         default=default_input,
-        help='Directory containing ROS2 bag folders (default: ../part a bags)',
+        help='Directory containing ROS2 bag folders (default: ../bags-alicia)',
     )
     parser.add_argument(
         "--output",
         default=default_output,
-        help='Directory to write CSV files into (default: ../part a csvs)',
+        help='Directory to write CSV files into (default: ../csvs-alicia)',
     )
     parser.add_argument(
         "--topics",
