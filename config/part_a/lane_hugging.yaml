@@ -48,7 +48,7 @@ lane_hugging:
     lookahead_row_pct: 0.65
 
     # Target offset in pixels: lane_hugging follows left lane estimate + lane_width_px.
-    lane_width_px: 30.0
+    lane_width_px: 150.0
 
     # Additional target-line bias in pixels (negative = left, positive = right).
     center_offset_px: 0.0 # -20 pretty good
