@@ -1,6 +1,10 @@
 <launch>
 
-  <node pkg="final_challenge" exec="astar_planner" name="astar_planner" output="screen">
+  <!-- <node pkg="final_challenge" exec="astar_planner" name="astar_planner" output="screen">
+    <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
+  </node> -->
+
+  <node pkg="final_challenge" exec="trajectory_planner" name="trajectory_planner" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
   </node>
 
@@ -24,9 +28,9 @@
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
   </node>
 
-  <!-- <node pkg="final_challenge" exec="traffic_light" name="traffic_light" output="screen">
+  <node pkg="final_challenge" exec="traffic_light" name="traffic_light" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
-  </node> -->
+  </node>
 
   <node pkg="final_challenge" exec="trajectory_follower" name="trajectory_follower" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>

@@ -48,7 +48,7 @@ state_machine:
     #sub
     object_detect_topic: "/object_detect_real"
     pose_topic: "/pf/pose"
-    trajectory_topic: "/astar/trajectory"
+    trajectory_topic: "/trajectory/current"
   
 particle_filter:
   ros__parameters:
@@ -78,10 +78,22 @@ particle_filter:
     deterministic: False
     lidar_scale_to_map_scale: 1.0
     
+trajectory_planner:
+  ros__parameters:
+   #pub
+    traj_topic: "/trajectory/current"
+    #sub
+    odom_topic: '/pf/pose/odom'
+    map_topic: '/inflated_map'
+    goal_topic: "/goal_pose"
+    init_topic: "/initialpose"
+    endpoints_topic: "/clicked_points"
+
+
 astar_planner:
   ros__parameters:
     #pub
-    traj_topic: "/astar/trajectory"
+    traj_topic: "/trajectory/current"
     min_topic: "/astar/planned_trajectory/min_point_array"
     #sub
     odom_topic: '/odom'
@@ -103,5 +115,5 @@ trajectory_follower:
     drive_topic: "/vesc/high_level/input/nav_0"
     #sub
     odom_topic: 'pf/pose/odom'
-    traj_topic: "/astar/trajectory"
+    traj_topic: "/trajectory/current"
     state_topic: "/state"

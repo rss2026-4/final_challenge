@@ -10,5 +10,6 @@ uint8 PATH_RETURN_DONE= 5
 uint8 TRAFFIC_STOP= 6
 uint8 PARKING_METER= 7
 uint8 PARKED= 8
+uint8 PARK_REVERSE= 9
 
 uint8 current_state

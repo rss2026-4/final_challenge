@@ -161,7 +161,6 @@ class ParticleFilter(Node):
         else:
             self.weights *= weights
             self.weights /= np.sum(self.weights)
-
         self.publish_tf()
         self.publish_viz()
 

@@ -35,6 +35,7 @@ setup(
             'lane_follower = final_challenge.part_a.lane_follower:main',
 
             #part b 
+            'trajectory_planner = final_challenge.part_b.trajectory_planner:main',
             'astar_planner = final_challenge.part_b.astar_planner:main',
             'homography_transform = final_challenge.part_b.homography_transform:main',
             'map_inflator = final_challenge.part_b.map_inflator:main',

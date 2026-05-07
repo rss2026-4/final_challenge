@@ -5,6 +5,7 @@ from state_msgs.msg import State
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from geometry_msgs.msg import PoseArray, PoseStamped
+from ackermann_msgs.msg import AckermannDriveStamped
 
 class StateMachine(Node):
     def __init__(self):
@@ -13,8 +14,9 @@ class StateMachine(Node):
         self.declare_parameter('state_topic', '/state')
         self.declare_parameter('object_detect_topic', '/object_detect')
         self.declare_parameter('closest_pub_topic', '/closest_obj')
-        self.declare_parameter('traj_topic', "/astar/trajectory") #"/trajectory/current"
+        self.declare_parameter('traj_topic', "/trajectory/current") 
         self.declare_parameter('pose_topic', "/pf/pose")
+        self.declare_parameter("drive_topic",  "/vesc/high_level/input/nav_0")
 
         # get params
         self.STATE_TOPIC = self.get_parameter('state_topic').get_parameter_value().string_value
@@ -22,11 +24,13 @@ class StateMachine(Node):
         self.CLOSEST_PUB_TOPIC = self.get_parameter('closest_pub_topic').get_parameter_value().string_value
         self.TRAJ_TOPIC = self.get_parameter('traj_topic').get_parameter_value().string_value
         self.POSE_TOPIC = self.get_parameter('pose_topic').get_parameter_value().string_value
+        self.DRIVE_TOPIC = self.get_parameter("drive_topic").get_parameter_value().string_value
 
         # publishers
         self.state_pub = self.create_publisher(State, self.STATE_TOPIC, 10)
         self.closest_pub = self.create_publisher(ObjectLocation, self.CLOSEST_PUB_TOPIC, 10)
         self.traj_pub = self.create_publisher(PoseArray, self.TRAJ_TOPIC, 10)
+        self.drive_pub = self.create_publisher(AckermannDriveStamped, self.DRIVE_TOPIC, 10)
         
         # subscribers
         self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 10)
@@ -47,6 +51,7 @@ class StateMachine(Node):
             State.TRAFFIC_STOP: "TRAFFIC_STOP",
             State.PARKING_METER: "PARKING_METER",
             State.PARKED: "PARKED",
+            State.PARK_REVERSE: "REVERSE"
         }
 
         self.state = None
@@ -57,7 +62,8 @@ class StateMachine(Node):
         self.initial_state()
         self.current_pose = None
         self.parked_pose = None
-
+        self.num_traffic_lights = 0
+        self.no_traffic_lights = 0
     
     def initial_state(self):
         """
@@ -88,11 +94,21 @@ class StateMachine(Node):
                 min_dist = obj_distance
                 closest_obj = object_msg
         
+        if closest_obj == None and self.state == State.TRAFFIC_STOP:
+            self.no_traffic_lights += 1
+            if self.no_traffic_lights > 20:
+                new_state = State()
+                new_state.current_state = State.PATH_FOLLOWING_FORWARD
+                self.get_logger().info("Green means go :D")
+                self.state_pub.publish(new_state)
+
         if closest_obj == None:
             return
         
         if closest_obj.label == "traffic light":
-            if self.state != State.PARKING_METER:
+            self.num_traffic_lights += 1
+
+            if self.state != State.PARKING_METER and self.num_traffic_lights > 3:
                 new_state = State()
                 new_state.current_state = State.TRAFFIC_STOP
 
@@ -125,13 +141,20 @@ class StateMachine(Node):
         if msg.current_state == State.PARKED:
             self.park_start = self.get_clock().now().nanoseconds / 1e9 
             self.parked_pose = self.current_pose
-            self.timer = self.create_timer(6, self.park_timer)
+            self.get_logger().info("Park timer started")
+            self.p_timer = self.create_timer(6, self.park_timer)
         
+        if msg.current_state == State.PARK_REVERSE:
+            self.reverse_start = self.get_clock().now().nanoseconds / 1e9
+            self.get_logger().info("Reverse timer started ")
+            self.publish_drive(-0.5, 0.0)
+            self.rev_timer = self.create_timer(6, self.reverse_timer)
+
         if msg.current_state == State.PATH_FORWARD_DONE:
             self.get_logger().info("Forward pass completed. Planning return path.")
             new_state = State()
             new_state.current_state = State.PATH_PLANNING_RETURN
-            self.state_pub.pub(new_state)
+            self.state_pub.publish(new_state)
 
         if msg.current_state == State.PATH_RETURN_DONE:
             self.get_logger().info("Trip completed! No more actions to take")
@@ -143,18 +166,43 @@ class StateMachine(Node):
         return np.sqrt(dx**2 + dy**2)
 
     def park_timer(self):
-        self.get_logger().info("Timer started ")
         current_time = self.get_clock().now().nanoseconds / 1e9 
 
         if current_time - self.park_start >= 5:
+            self.get_logger().info("Park time up ")
+            self.p_timer.destroy()
+            self.p_timer = None
+
+            state = State()
+            state.current_state = State.PARK_REVERSE
+            self.state_pub.publish(state)
+        
+    def reverse_timer(self):
+        current_time = self.get_clock().now().nanoseconds / 1e9 
+        if current_time - self.reverse_start >= 5:
             self.get_logger().info("Times up ")
-            self.timer.destroy()
-            self.timer = None
+            self.rev_timer.destroy()
+            self.rev_timer = None
+            
+            self.publish_drive(0.0, 0.0)
 
             state = State()
             state.current_state = State.PATH_FOLLOWING_FORWARD
+            self.get_logger().info("changing to path forward")
             self.state_pub.publish(state)
-            
+
+        
+        
+
+    def publish_drive(self, speed, angle):
+        drive_cmd = AckermannDriveStamped()
+        drive_cmd.header.stamp = self.get_clock().now().to_msg()
+        drive_cmd.header.frame_id = "base_link"
+        drive_cmd.drive.speed = speed
+        drive_cmd.drive.steering_angle = angle
+        self.get_logger().info(f"{drive_cmd.drive.speed=}")
+        self.drive_pub.publish(drive_cmd)
+
     # def repark_check(self, begin_time, wait_time):
     #     current_time = self.get_clock().now().nanoseconds / 1e9 
 

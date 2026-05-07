@@ -6,8 +6,8 @@ class MotionModel:
         node.declare_parameter('deterministic', False)
         self.deterministic = node.get_parameter('deterministic').get_parameter_value().bool_value
         self.node = node
-        self.lin_noise_frac = 0.15
-        self.ang_noise_frac = 0.15
+        self.lin_noise_frac = 0.3
+        self.ang_noise_frac = 0.3
         # self.noise_std = 0.15
 
 

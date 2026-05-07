@@ -29,6 +29,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ObjectLocationPixel.msg"
   "msg/ObjectLocationPixelArray.msg"
   "msg/ParkingError.msg"
+  "msg/Bounding.msg"
  )
 
 if(BUILD_TESTING)

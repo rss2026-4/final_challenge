@@ -6,7 +6,7 @@ import rclpy
 import torch
 
 from state_msgs.msg import State
-from vis_msgs.msg import ObjectLocationPixel, ObjectLocationPixelArray
+from vis_msgs.msg import ObjectLocationPixel, ObjectLocationPixelArray, Bounding
 
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -34,9 +34,11 @@ class YoloAnnotatorNode(Node):
 
         # Declare and get ROS parameters
         self.declare_parameter('object_detect_topic', '/object_detect_pixels')
-        self.declare_parameter('state_topic', '/state')
+        # self.declare_parameter('state_topic', '/state')
+        
         self.OBJECT_DETECT_TOPIC = self.get_parameter('object_detect_topic').get_parameter_value().string_value
-        self.STATE_TOPIC = self.get_parameter('state_topic').get_parameter_value().string_value
+        # self.STATE_TOPIC = self.get_parameter('state_topic').get_parameter_value().string_value
+        
 
         self.model_name = (
             self.declare_parameter("model", "yolo11n.pt")
@@ -78,24 +80,34 @@ class YoloAnnotatorNode(Node):
 
         self.declare_parameter('image_topic', "/zed/zed_node/rgb/image_rect_color")
         self.declare_parameter('annotated_image_topic', "/yolo/annotated_image")
+        self.declare_parameter('bounding_box','/bounding_box')
+        self.declare_parameter('hom_pixel','/hom_pixel')
+
         
         self.IMAGE_TOPIC = self.get_parameter('image_topic').get_parameter_value().string_value
         self.ANNOTATED_IMAGE_TOPIC = self.get_parameter('annotated_image_topic').get_parameter_value().string_value
+        self.BOUNDING_BOX = self.get_parameter('bounding_box').get_parameter_value().string_value
+        self.HOM_PIXEL = self.get_parameter('hom_pixel').get_parameter_value().string_value
 
         self.sub = self.create_subscription(Image, self.IMAGE_TOPIC, self.on_image, 10)
         self.pub = self.create_publisher(Image, self.ANNOTATED_IMAGE_TOPIC, 10)
+        self.bounding_pub = self.create_publisher(Bounding, self.BOUNDING_BOX, 10)
+        self.hom_pixel = self.create_publisher(Image, self.HOM_PIXEL, 10)
         
         self.object_detection_pub = self.create_publisher(ObjectLocationPixelArray, self.OBJECT_DETECT_TOPIC, 10)
-        self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 10)
+        # self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 10)
         self.save_img = False
         self.num_imgs = 0
 
-    def state_callback(self, msg):
-        if msg.current_state == State.PARKED:
-            self.save_img = True
+        self.object_u = 0
+        self.object_v = 0
 
-        else:
-            self.save_img = False
+    # def state_callback(self, msg):
+    #     if msg.current_state == State.PARKED:
+    #         self.save_img = True
+
+    #     else:
+    #         self.save_img = False
 
 
     def get_class_color_map(self) -> dict[str, tuple[int, int, int]]:
@@ -118,6 +130,7 @@ class YoloAnnotatorNode(Node):
         # Convert ROS -> OpenCV (BGR)
         try:
             bgr = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+            hom  = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
         except Exception as e:
             self.get_logger().error(f"cv_bridge conversion failed: {e}")
             return
@@ -143,11 +156,18 @@ class YoloAnnotatorNode(Node):
 
         # Draw detections on BGR image
         annotated = self.draw_detections(bgr, dets)
+
+        hom_msg = self.draw_hom(hom, dets)
+        hom_msg = self.bridge.cv2_to_imgmsg(hom_msg, encoding="bgr8")
+        self.hom_pixel.publish(hom_msg)
+
         if self.save_img and self.num_imgs < 2 and dets != []:
             cv2.imwrite(f"parking_meter_{self.num_imgs}.jpg", annotated)
             self.num_imgs += 1
             self.save_img = False
             self.get_logger().info("Image saved to parking_meter.jpg!")
+
+            
 
 
 
@@ -204,7 +224,12 @@ class YoloAnnotatorNode(Node):
             object_img_loc = ObjectLocationPixel()
             
             object_img_loc.u = float((x1 + x2)/2.0)
-            object_img_loc.v = float((y2)) # may want to change this
+            object_img_loc.v = float((y2))
+            if class_name == "traffic light":
+                object_img_loc.v = float((y2+((y2-y1)*0.82)))
+            self.object_u = object_img_loc.u
+            self.object_v = object_img_loc.v
+
             object_img_loc.label = class_name
 
             object_img_locs.objects.append(object_img_loc)
@@ -226,6 +251,15 @@ class YoloAnnotatorNode(Node):
             top_left = (det.x1, det.y1)
             bot_right = (det.x2, det.y2)
 
+            object_bounding = Bounding()
+            object_bounding.x_bottom_right = float(det.x2)
+            ###CHANGED THIS TO y2/0.45
+            object_bounding.y_bottom_right = float(det.y2)
+            object_bounding.x_top_left = float(det.x1)
+            object_bounding.y_top_left = float(det.y1)
+
+            self.bounding_pub.publish(object_bounding)
+
             # TODO: Draw the bounding box around the detection to the output image.
             #       Use the colors you specified per class in `get_class_color_map`
             #       by accessing the self.class_color_map dictionary.
@@ -238,6 +272,18 @@ class YoloAnnotatorNode(Node):
             # Hint: Use cv2's `putText` function to put text on the annotated image.
 
         return out_image
+
+    def draw_hom(
+        self,
+        bgr_image: np.ndarray,
+        detections: List[Detection],
+    ) -> np.ndarray:
+    
+        hom_image = bgr_image.copy()
+        hom_image = cv2.circle(hom_image, (int(self.object_u), int(self.object_v)), radius=5, color = (0,255,0), thickness = 2)
+        return hom_image
+
+    
 
 
 def main() -> None:

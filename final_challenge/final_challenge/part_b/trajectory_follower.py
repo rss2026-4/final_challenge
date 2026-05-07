@@ -31,7 +31,7 @@ class PurePursuit(Node):
         self.STATE_TOPIC = self.get_parameter('state_topic').get_parameter_value().string_value
 
         self.lookahead = 0.5  # FILL IN #
-        self.speed = 1.0  # FILL IN #
+        self.speed = 0.75  # FILL IN #
         self.wheelbase_length = 0.325  # FILL IN #
         self.max_steer = 0.34
 
@@ -67,6 +67,7 @@ class PurePursuit(Node):
             self.disabled = False
             self.get_logger().info("Activating path follower")
         else:
+            # self.get_logger().info("--------------Path follower disabled. Going ot another state--------------")
             self.disabled = True
 
 
@@ -87,6 +88,14 @@ class PurePursuit(Node):
 
         if np.sqrt((pose_x-self.final_x)**2+(pose_y-self.final_y)**2) < 0.5:
             self.get_logger().info(f"I refuse")
+            state = State()
+            if self.forward_pass:
+                self.get_logger().info("reached end of path1!!!!!!!!!!!!!!!!!!")
+                state.current_state = State.PATH_FORWARD_DONE
+            if self.return_pass:
+                state.current_state = State.PATH_RETURN_DONE
+
+            self.state_pub.publish(state)
             self.publish_drive(0.0,0.0)
             return
         
@@ -113,13 +122,6 @@ class PurePursuit(Node):
         # reached the end?
         if closest_seg is None:
             self.publish_drive(0.0, 0.0)
-            state = State()
-            if self.forward_pass:
-                state.current_state = State.PATH_FORWARD_DONE
-            if self.return_pass:
-                state.current_state = State.PATH_RETURN_DONE
-
-            self.state_pub.publish(state)
             return
 
         #do the math to get the goal

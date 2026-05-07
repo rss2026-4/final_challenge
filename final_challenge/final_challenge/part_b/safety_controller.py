@@ -92,7 +92,7 @@ class SafetyController(Node):
         angle_range = 10 # num indexes away to have a certain angle range; angle_range*2.7 degs = degree range 
         start = halfway_indx-angle_range
         end = halfway_indx+angle_range
-        safety_range = 0.3
+        safety_range = 0.45
 
         
         # x = [0.0]

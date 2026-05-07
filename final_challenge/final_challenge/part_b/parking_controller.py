@@ -33,7 +33,7 @@ class ParkingController(Node):
         self.object_sub = self.create_subscription(ObjectLocation, self.OBJECT_TOPIC, self.relative_parking_callback, 1)
         self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 1)
 
-        self.parking_distance = 0.5  # meters; try playing with this number!
+        self.parking_distance =  1.5 # meters; try playing with this number!
         self.relative_x = 0
         self.relative_y = 0
         self.robot_offset = 0.25 # offset depending on how far the wheels are - apparently part of ts pure pursuit controller lol
@@ -116,7 +116,7 @@ class ParkingController(Node):
             )
 
             # given saftey controller problems makes sense to scale speed
-            speed = min(1, max(0.3, distance/1.5))
+            speed = min(0.8, max(0.3, distance/1.5))
             # speed = 1.5
 
             drive_cmd.drive.speed = float(speed)
