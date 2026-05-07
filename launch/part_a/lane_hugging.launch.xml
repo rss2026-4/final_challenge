@@ -1,9 +1,0 @@
-<launch>
-  <!-- <include file="$(find-pkg-share zed_wrapper)/launch/zed_camera.launch.py">
-    <arg name="camera_model" value="zed"/>
-  </include> -->
-
-  <node pkg="final_challenge" exec="lane_hugging" name="lane_hugging" output="screen">
-    <param from="$(find-pkg-share final_challenge)/config/part_a/lane_hugging.yaml"/>
-  </node>
-</launch>

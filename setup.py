@@ -32,7 +32,6 @@ setup(
     entry_points={
         'console_scripts': [
             'lane_detector = final_challenge.part_a.lane_detector:main',
-            'lane_hugging = final_challenge.part_a.lane_hugging:main',
             'lane_follower = final_challenge.part_a.lane_follower:main',
         ],
     },
