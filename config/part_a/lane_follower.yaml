@@ -41,7 +41,7 @@ lane_detector:
     max_angle_deg: 85.0
 
     # Choose the centerline point closest to this ground-plane distance.
-    lookahead_distance_m: 2.0
+    lookahead_distance_m: 3.0
     lookahead_samples: 80
 
     # Fallback fixed image row if homography-based sampling fails.
@@ -51,7 +51,7 @@ lane_detector:
     lane_width_px: 150.0
 
     # Bias the centerline horizontally in pixels (negative = left, positive = right).
-    center_offset_px: 0.0 # -20 pretty good
+    center_offset_px: -20.0 # -20 pretty good
 
 lane_follower:
   ros__parameters:
