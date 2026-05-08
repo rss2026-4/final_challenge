@@ -12,4 +12,6 @@ uint8 PARKING_METER= 7
 uint8 PARKED= 8
 uint8 PARK_REVERSE= 9
 
+uint8 INIT = 10
+
 uint8 current_state

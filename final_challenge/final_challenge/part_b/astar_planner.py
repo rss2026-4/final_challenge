@@ -164,12 +164,28 @@ class PathPlan(Node):
         if msg.current_state == State.PATH_PLANNING_RETURN:
             self.plan_return(self.return_path)
     
+    # def plan_path(self, start_point, end_point, map_received):
+    #     self.get_logger().info("Planning forward path via A*")
+    #     self.clear_min_vis()
+    #     traj = self.a_star_search(start_point, end_point)
+    #     self.trajectory.clear()
+    #     self.trajectory.points = traj
+    #     self.trajectory.update_distances()
+    #     self.get_logger().info(f"path length: {self.trajectory.distances[-1]:.2f} m")
+    #     self.traj_pub.publish(self.trajectory.toPoseArray())
+    #     self.trajectory.publish_viz()
+        # if traj != []:
+            # self.get_min_obst_dist(traj)
+
     def plan_path(self, start_point, end_point, map_received):
         self.get_logger().info("Planning forward path via A*")
         self.clear_min_vis()
-        traj = self.a_star_search(start_point, end_point)
+        mid_point = (-4.8, 25.4)
+        traj = self.a_star_search(start_point, mid_point)
+        traj_2 = self.a_star_search(mid_point,end_point)
+        final_traj = traj + traj_2
         self.trajectory.clear()
-        self.trajectory.points = traj
+        self.trajectory.points = final_traj
         self.trajectory.update_distances()
         self.get_logger().info(f"path length: {self.trajectory.distances[-1]:.2f} m")
         self.traj_pub.publish(self.trajectory.toPoseArray())

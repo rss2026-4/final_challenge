@@ -89,11 +89,11 @@ class PurePursuit(Node):
         if np.sqrt((pose_x-self.final_x)**2+(pose_y-self.final_y)**2) < 0.5:
             self.get_logger().info(f"I refuse")
             state = State()
-            if self.forward_pass:
-                self.get_logger().info("reached end of path1!!!!!!!!!!!!!!!!!!")
-                state.current_state = State.PATH_FORWARD_DONE
-            if self.return_pass:
-                state.current_state = State.PATH_RETURN_DONE
+            # if self.forward_pass:
+            self.get_logger().info(f"!!!!!!!!!!!!!!!!! reached end of path !!!!!!!!!!!!!!!!!!")
+            state.current_state = State.PATH_FORWARD_DONE
+            # if self.return_pass:
+            #     state.current_state = State.PATH_RETURN_DONE
 
             self.state_pub.publish(state)
             self.publish_drive(0.0,0.0)

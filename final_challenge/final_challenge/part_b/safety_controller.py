@@ -89,7 +89,7 @@ class SafetyController(Node):
         """
         # safety params
         halfway_indx = len(laser_msg.ranges)//2
-        angle_range = 10 # num indexes away to have a certain angle range; angle_range*2.7 degs = degree range 
+        angle_range = 33 # num indexes away to have a certain angle range; angle_range*2.7 degs = degree range 
         start = halfway_indx-angle_range
         end = halfway_indx+angle_range
         safety_range = 0.45
@@ -104,7 +104,7 @@ class SafetyController(Node):
 
         num_danger = 0
         for point in filtered_data:
-            if num_danger >= 3:
+            if num_danger >= 3: 
                 return True
             
             if point < safety_range:

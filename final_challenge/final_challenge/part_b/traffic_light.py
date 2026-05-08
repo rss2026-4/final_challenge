@@ -66,7 +66,7 @@ class TrafficLight(Node):
         self.new_bottom_y = None
         self.w = None
 
-        self.side = True
+        self.side = False
 
         self.drive_cmd = AckermannDriveStamped()
         self.create_timer(1 / 20, self.timer_callback)
@@ -136,7 +136,7 @@ class TrafficLight(Node):
 
         distance = np.sqrt(self.relative_x**2 + self.relative_y**2)
 
-        self.get_logger().info(f'distance from traffic light {distance}')
+        # self.get_logger().info(f'distance from traffic light {distance}')
 
         if (distance < self.parking_distance_max) and (self.red == True):
             drive_cmd.drive.speed = 0.0
@@ -207,19 +207,26 @@ class TrafficLight(Node):
             self.red = False
             self.get_logger().info('we can drive')
             return ((0, 0), (0, 0))
-        self.get_logger().info('red light detected')
-        self.red = True
+        
+        
         # find the largest contour
         
         if self.x_bottom_right is not None:
             # self.get_logger().info(f'contouring')
             largest = max(contours, key=cv2.contourArea)
             x, y, w, h = cv2.boundingRect(largest)
+            area = w * h
+            self.get_logger().info(f'area is {area}')
+            if w*h < 5:
+                self.red = False
+                return ((0, 0), (0, 0))
+            self.get_logger().info('red light detected')
             bounding_box = ((x, y), (x + w, y + h))
             if contours is None:
                 self.get_logger().info(f'returning zeros')
                 return ((0, 0), (0, 0))
 
+            self.red = True
             return bounding_box
         return ((0,0), (0,0))
 

@@ -20,9 +20,9 @@
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
   </node>
 
-  <node pkg="final_challenge" exec="particle_filter" name="particle_filter" output="screen">
+  <!-- <node pkg="final_challenge" exec="particle_filter" name="particle_filter" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>
-  </node>
+  </node> -->
 
   <node pkg="final_challenge" exec="safety_controller" name="safety_controller" output="screen">
     <param from="$(find-pkg-share final_challenge)/config/part_b/params.yaml"/>

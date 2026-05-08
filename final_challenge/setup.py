@@ -41,7 +41,7 @@ setup(
             'map_inflator = final_challenge.part_b.map_inflator:main',
             'parking_controller = final_challenge.part_b.parking_controller:main',
             'parking_detector = final_challenge.part_b.parking_detector:main',
-            'particle_filter = final_challenge.part_b.particle_filter:main',
+            # 'particle_filter = final_challenge.part_b.particle_filter:main',
             'safety_controller = final_challenge.part_b.safety_controller:main',
             'state_machine = final_challenge.part_b.state_machine:main',
             'traffic_light = final_challenge.part_b.traffic_light:main',

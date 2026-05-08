@@ -31,7 +31,8 @@ class StateMachine(Node):
         self.closest_pub = self.create_publisher(ObjectLocation, self.CLOSEST_PUB_TOPIC, 10)
         self.traj_pub = self.create_publisher(PoseArray, self.TRAJ_TOPIC, 10)
         self.drive_pub = self.create_publisher(AckermannDriveStamped, self.DRIVE_TOPIC, 10)
-        
+        self.goal_sub = self.create_subscription(PoseStamped, "/goal_pose", self.goal_cb, 10)
+ 
         # subscribers
         self.state_sub = self.create_subscription(State, self.STATE_TOPIC, self.state_callback, 10)
         self.object_detect_sub = self.create_subscription(ObjectLocationArray, self.OBJECT_DETECT_TOPIC, self.object_detect_callback, 10)
@@ -51,7 +52,8 @@ class StateMachine(Node):
             State.TRAFFIC_STOP: "TRAFFIC_STOP",
             State.PARKING_METER: "PARKING_METER",
             State.PARKED: "PARKED",
-            State.PARK_REVERSE: "REVERSE"
+            State.PARK_REVERSE: "REVERSE",
+            State.INIT : "INIT"
         }
 
         self.state = None
@@ -70,10 +72,15 @@ class StateMachine(Node):
         Initializes state as planning (ready to receive points for trajectory)
         """
         new_state = State()
-        new_state.current_state = State.PATH_PLANNING_FORWARD
+        new_state.current_state = State.INIT
 
         self.state_pub.publish(new_state)
     
+    def goal_cb(self, msg):
+        new_state = State()
+        new_state.current_state = State.PATH_PLANNING_FORWARD
+        self.state_pub.publish(new_state)
+
     def pose_callback(self, msg):
         self.current_pose = (msg.pose.position.x, msg.pose.position.y)
 
@@ -151,9 +158,9 @@ class StateMachine(Node):
             self.rev_timer = self.create_timer(6, self.reverse_timer)
 
         if msg.current_state == State.PATH_FORWARD_DONE:
-            self.get_logger().info("Forward pass completed. Planning return path.")
+            self.get_logger().info("Forward pass completed. Planning next path.")
             new_state = State()
-            new_state.current_state = State.PATH_PLANNING_RETURN
+            new_state.current_state = State.PATH_PLANNING_FORWARD
             self.state_pub.publish(new_state)
 
         if msg.current_state == State.PATH_RETURN_DONE:
@@ -211,7 +218,7 @@ class StateMachine(Node):
     #     return False    
 
     def traj_callback(self, msg):
-        if self.state == State.PATH_PLANNING_FORWARD and not self.forward_started:
+        if self.state == State.PATH_PLANNING_FORWARD:
             self.get_logger().info("Forward path created! Publishing and following trajectory.")
             new_state = State()
             new_state.current_state = State.PATH_FOLLOWING_FORWARD
@@ -221,11 +228,11 @@ class StateMachine(Node):
             self.forward_started = True
             self.traj_pub.publish(msg)
 
-        if self.state == State.PATH_PLANNING_RETURN and not self.return_started:
-            self.get_logger().info("Return path created! Publishing and following trajectory.")
-            new_state = State()
-            new_state.current_state = State.PATH_FOLLOWING_RETURN
-            self.state_pub.publish(new_state)
+        # if self.state == State.PATH_PLANNING_RETURN and not self.return_started:
+        #     self.get_logger().info("Return path created! Publishing and following trajectory.")
+        #     new_state = State()
+        #     new_state.current_state = State.PATH_FOLLOWING_RETURN
+        #     self.state_pub.publish(new_state)
 
             # publish trajectory
             self.return_started = True
