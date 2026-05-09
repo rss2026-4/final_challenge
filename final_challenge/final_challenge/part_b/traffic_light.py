@@ -76,6 +76,7 @@ class TrafficLight(Node):
         self.disabled = True
         self.red = None
         self.stopped = False
+        self.saw = False
 
         #updated variables
         self.traffic_light_pub = self.create_publisher(ObjectLocationPixel, "/relative_traffic_px", 10)
@@ -145,6 +146,7 @@ class TrafficLight(Node):
             self.drive_cmd = drive_cmd
             self.drive_pub.publish(self.drive_cmd)
             self.stopped = True
+            self.saw = True
             # self.error_publisher()
 
         # Transition back to forward when light turns green
@@ -217,8 +219,15 @@ class TrafficLight(Node):
             x, y, w, h = cv2.boundingRect(largest)
             area = w * h
             self.get_logger().info(f'area is {area}')
-            if w*h < 5:
+            if (w*h < 5) and (w*h > 150):
                 self.red = False
+                # if self.saw = True
+                #     state = State()
+                #     state.current_state = State.PATH_FOLLOWING_FORWARD
+                #     self.get_logger().info("changing state")
+                #     self.state_pub.publish(state)
+
+
                 return ((0, 0), (0, 0))
             self.get_logger().info('red light detected')
             bounding_box = ((x, y), (x + w, y + h))
@@ -228,6 +237,7 @@ class TrafficLight(Node):
 
             self.red = True
             return bounding_box
+
         return ((0,0), (0,0))
 
 
